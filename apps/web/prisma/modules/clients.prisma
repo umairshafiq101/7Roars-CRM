@@ -1,0 +1,25 @@
+model Client {
+  id              String       @id @default(cuid())
+  organization_id String
+  name            String
+  email           String?
+  phone           String?
+  company         String?
+  address         Json?
+  notes           String?
+  status          ClientStatus @default(ACTIVE)
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+  deleted_at      DateTime?
+
+  organization    Organization @relation(fields: [organization_id], references: [id])
+  projects        Project[]
+  invoices        Invoice[]
+}
+
+enum ClientStatus {
+  LEAD
+  ACTIVE
+  PAUSED
+  CHURNED
+}

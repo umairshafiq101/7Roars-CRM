@@ -1,0 +1,33 @@
+model Task {
+  id              String       @id @default(cuid())
+  project_id      String
+  assignee_id     String?
+  title           String
+  description     String?
+  status          TaskStatus   @default(TODO)
+  priority        TaskPriority @default(MEDIUM)
+  due_date        DateTime?
+  estimated_hours Decimal?     @db.Decimal(10, 2)
+  sort_order      Int          @default(0)
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+  deleted_at      DateTime?
+
+  project         Project      @relation(fields: [project_id], references: [id])
+  time_entries    TimeEntry[]
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  BLOCKED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}

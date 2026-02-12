@@ -1,0 +1,9 @@
+export const APP_NAME = "7Roars Agency OS";
+export const APP_VERSION = "1.0.0";
+export const DEFAULT_TIMEZONE = "Asia/Karachi";
+export const DEFAULT_CURRENCY = "USD";
+export const SCREENSHOT_INTERVAL_MIN = 5;
+export const SCREENSHOT_INTERVAL_MAX = 10;
+export const ACTIVITY_INTERVAL_SECONDS = 60;
+export const PAGINATION_DEFAULT_LIMIT = 20;
+export const PAGINATION_MAX_LIMIT = 100;

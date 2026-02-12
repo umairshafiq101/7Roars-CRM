@@ -1,0 +1,127 @@
+model Organization {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  logo_url   String?
+  settings   Json     @default("{}")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  members    Member[]
+  projects   Project[]
+  clients    Client[]
+  settings_entries Setting[]
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  emailVerified Boolean  @default(false)
+  image         String?
+  avatar_url    String?
+  timezone      String   @default("Asia/Karachi")
+  is_active     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members       Member[]
+  time_entries  TimeEntry[]
+  screenshots   Screenshot[]
+  activity_logs ActivityLog[]
+  audit_logs    AuditLog[]
+  sessions      Session[]
+  accounts      Account[]
+}
+
+model Member {
+  id              String       @id @default(cuid())
+  user_id         String
+  organization_id String
+  role            MemberRole   @default(EMPLOYEE)
+  hourly_rate     Decimal?     @db.Decimal(10, 2)
+  is_active       Boolean      @default(true)
+  joined_at       DateTime     @default(now())
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  user            User         @relation(fields: [user_id], references: [id])
+  organization    Organization @relation(fields: [organization_id], references: [id])
+
+  @@unique([user_id, organization_id])
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  user_id         String
+  organization_id String?
+  action          String
+  entity_type     String
+  entity_id       String
+  old_data        Json?
+  new_data        Json?
+  ip_address      String?
+  created_at      DateTime @default(now())
+
+  user            User     @relation(fields: [user_id], references: [id])
+}
+
+model Setting {
+  id              String   @id @default(cuid())
+  organization_id String
+  key             String
+  value           Json
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organization_id], references: [id])
+
+  @@unique([organization_id, key])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+}

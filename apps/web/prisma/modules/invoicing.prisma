@@ -1,0 +1,41 @@
+model Invoice {
+  id              String        @id @default(cuid())
+  organization_id String
+  client_id       String
+  invoice_number  String        @unique
+  status          InvoiceStatus @default(DRAFT)
+  issue_date      DateTime
+  due_date        DateTime
+  subtotal        Decimal       @db.Decimal(10, 2)
+  tax_rate        Decimal       @default(0) @db.Decimal(5, 2)
+  tax_amount      Decimal       @default(0) @db.Decimal(10, 2)
+  total           Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  notes           String?
+  paid_at         DateTime?
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  client          Client        @relation(fields: [client_id], references: [id])
+  line_items      InvoiceLineItem[]
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(cuid())
+  invoice_id  String
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unit_price  Decimal @db.Decimal(10, 2)
+  amount      Decimal @db.Decimal(10, 2)
+
+  invoice     Invoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+}

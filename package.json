@@ -1,0 +1,17 @@
+{
+  "name": "7roars-agency-os",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:push": "pnpm --filter web db:push",
+    "db:generate": "pnpm --filter web db:generate"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2",
+    "turbo": "^2.4.0"
+  }
+}
