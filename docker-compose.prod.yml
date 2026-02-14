@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    env_file: .env.production
+    env_file: .env
     volumes:
       - uploads:/app/apps/web/public/uploads
     depends_on:
@@ -20,11 +20,11 @@ services:
   db:
     image: postgres:17-alpine
     restart: always
-    env_file: .env.production
+    env_file: .env
     environment:
       POSTGRES_DB: agency_os
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env.production}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
