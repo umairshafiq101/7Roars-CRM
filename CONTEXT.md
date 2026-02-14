@@ -129,8 +129,10 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
     - [x] 4.5.5 Deploy scripts (setup-vps.sh, deploy.sh)
     - [x] 4.5.6 .env.production.example + DEPLOYMENT-GUIDE.md
     - [x] 4.5.7 Desktop build scripts + app icon
-    - [ ] 4.5.8 VPS setup (manual — SSH, clone, start — see DEPLOYMENT-GUIDE.md)
-    - [ ] 4.5.9 DNS A record (manual — point domain to VPS IP)
+    - [x] 4.5.8 VPS setup ✅ COMPLETE — deployed at https://os.7roars.com
+    - [x] 4.5.9 DNS A record ✅ COMPLETE — os.7roars.com → 187.77.27.176
+    - [x] 4.5.10 Production auth fixes (NEXT_PUBLIC_APP_URL build-time, secure cookies, proxy headers)
+    - [x] 4.5.11 Desktop agent production config (server URL, secure cookie names)
 - [x] Phase 5: Worktivity-Style Desktop Agent Upgrade ✅ COMPLETE
   - [x] 5.A1 Fix activity tracking lifecycle (start/stop with timer)
   - [x] 5.A2 Throttle mouse move events (500ms debounce, separate click/move counts)

@@ -793,5 +793,20 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 - Screenshots stored on local disk (85GB free ≈ 3.5 years at 2GB/month)
 - Files: `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy.sh`, `scripts/setup-vps.sh`, `.github/workflows/deploy-web.yml`, `.env.production.example`, `DEPLOYMENT-GUIDE.md`
 
+[2026-02-14] [4.5-deploy] ✅ DONE — VPS deployment completed + production fixes
+- Deployed full stack to Hostinger VPS at https://os.7roars.com
+- Fixed Dockerfile: replaced corepack with `npm install -g pnpm` (npm registry 500 errors)
+- Fixed docker-compose.prod.yml: use `.env` instead of `.env.production` for Docker Compose variable interpolation
+- Added `migrate` service (builder stage target) to docker-compose for running `prisma db push` with full source
+- Fixed `NEXT_PUBLIC_APP_URL` not set at Docker build time — auth client was sending requests to `http://localhost:3000`
+- Fixed `proxy.ts`: check both `__Secure-better-auth.session_token` and `better-auth.session_token` for production
+- Added `trustedOrigins` with both `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to auth config
+- Added Caddy proxy headers (`X-Forwarded-Proto`, `X-Real-IP`) for proper HTTPS detection
+- Desktop agent: default `serverUrl` → `https://os.7roars.com`, secure cookie handling for HTTPS
+- DNS A record configured via Namecheap cPanel Zone Editor → `187.77.27.176`
+- Let's Encrypt HTTPS certificate auto-provisioned by Caddy
+- Login/signup verified working via Playwright automation
+- Files: `Dockerfile`, `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy.sh`, `apps/web/lib/auth.ts`, `apps/web/proxy.ts`, `apps/desktop/src/main/auth.ts`, `apps/desktop/src/main/config.ts`, `apps/desktop/src/renderer/Login.tsx`
+
 ## Reverted Decisions
 - None currently
