@@ -2,7 +2,10 @@
 # Caddy auto-provisions HTTPS via Let's Encrypt
 
 os.7roars.com {
-	reverse_proxy web:3000
+	reverse_proxy web:3000 {
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Real-IP {remote_host}
+	}
 
 	# Gzip compression
 	encode gzip

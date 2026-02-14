@@ -11,11 +11,15 @@ function slugify(text: string): string {
 }
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
   emailAndPassword: {
     enabled: true,
+  },
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
