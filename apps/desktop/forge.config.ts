@@ -16,6 +16,8 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel({
       name: "7RoarsAgent",
+      authors: "7Roars Digital Agency",
+      description: "7Roars Agency OS — Desktop Time Tracking Agent",
       setupIcon: "./assets/icon.ico",
       iconUrl:
         "https://raw.githubusercontent.com/7roars/agency-os/main/assets/icon.ico",
