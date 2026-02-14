@@ -7,7 +7,9 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpack: "node_modules/{sql.js,sharp,uiohook-napi,@img}/**/*",
+    },
     icon: "./assets/icon",
     name: "7Roars Agent",
     executableName: "7roars-agent",
