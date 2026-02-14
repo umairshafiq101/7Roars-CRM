@@ -1,6 +1,39 @@
 import { app, BrowserWindow, ipcMain, powerMonitor } from "electron";
 import path from "node:path";
 
+// Handle Squirrel installer events (create/remove shortcuts)
+if (process.platform === "win32") {
+  const { spawn } = require("node:child_process");
+  const updateExe = path.resolve(
+    path.dirname(process.execPath),
+    "..",
+    "Update.exe"
+  );
+  const handleSquirrelEvent = () => {
+    const squirrelEvent = process.argv[1];
+    if (!squirrelEvent) return false;
+    const target = path.basename(process.execPath);
+    switch (squirrelEvent) {
+      case "--squirrel-install":
+      case "--squirrel-updated":
+        spawn(updateExe, ["--createShortcut", target], { detached: true });
+        app.quit();
+        return true;
+      case "--squirrel-uninstall":
+        spawn(updateExe, ["--removeShortcut", target], { detached: true });
+        app.quit();
+        return true;
+      case "--squirrel-obsolete":
+        app.quit();
+        return true;
+    }
+    return false;
+  };
+  if (handleSquirrelEvent()) {
+    process.exit(0);
+  }
+}
+
 // Enable remote debugging for E2E testing
 app.commandLine.appendSwitch("remote-debugging-port", "9222");
 
