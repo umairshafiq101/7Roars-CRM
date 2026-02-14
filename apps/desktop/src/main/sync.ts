@@ -3,6 +3,7 @@ import { ipcMain } from "electron";
 import { getDb, persistDb } from "./store";
 import { getConfig } from "./config";
 import { getAuthHeaders, getStoredSession } from "./auth";
+import { electronFetch } from "./net-fetch";
 import { getTimerState } from "./timer";
 import { getMainWindow } from "./index";
 import type { SyncStatus } from "../shared/types";
@@ -145,7 +146,7 @@ async function syncTimeEntry(payload: string): Promise<boolean> {
   const data = JSON.parse(payload);
 
   if (data.action === "create") {
-    const response = await fetch(`${config.serverUrl}/api/v1/time-entries`, {
+    const response = await electronFetch(`${config.serverUrl}/api/v1/time-entries`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -164,7 +165,7 @@ async function syncTimeEntry(payload: string): Promise<boolean> {
   }
 
   if (data.action === "stop") {
-    const response = await fetch(`${config.serverUrl}/api/v1/time-entries`, {
+    const response = await electronFetch(`${config.serverUrl}/api/v1/time-entries`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -223,7 +224,7 @@ async function syncScreenshot(
   console.log(`[SYNC] Uploading screenshot: ${filePath} (${(fileBuffer.length / 1024).toFixed(1)}KB)`);
   console.log(`[SYNC] Metadata:`, JSON.stringify(metadata));
 
-  const response = await fetch(`${config.serverUrl}/api/v1/screenshots`, {
+  const response = await electronFetch(`${config.serverUrl}/api/v1/screenshots`, {
     method: "POST",
     headers,
     body: formData,
@@ -250,7 +251,7 @@ async function sendHeartbeat(): Promise<void> {
   const config = getConfig();
   try {
     const timerState = getTimerState();
-    await fetch(`${config.serverUrl}/api/v1/heartbeat`, {
+    await electronFetch(`${config.serverUrl}/api/v1/heartbeat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -278,7 +279,7 @@ async function syncAppUsage(payload: string): Promise<boolean> {
     body.time_entry_id = data.time_entry_id;
   }
 
-  const response = await fetch(`${config.serverUrl}/api/v1/app-usage`, {
+  const response = await electronFetch(`${config.serverUrl}/api/v1/app-usage`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -306,7 +307,7 @@ async function syncActivity(payload: string): Promise<boolean> {
     body.time_entry_id = data.time_entry_id;
   }
 
-  const response = await fetch(`${config.serverUrl}/api/v1/activity`, {
+  const response = await electronFetch(`${config.serverUrl}/api/v1/activity`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

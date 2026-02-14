@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { getDb, persistDb } from "./store";
 import { getAuthHeaders, getStoredSession } from "./auth";
+import { electronFetch } from "./net-fetch";
 import type { AppConfig } from "../shared/types";
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -46,7 +47,7 @@ export async function fetchServerSettings(): Promise<void> {
 
   const config = getConfig();
   try {
-    const response = await fetch(`${config.serverUrl}/api/v1/settings`, {
+    const response = await electronFetch(`${config.serverUrl}/api/v1/settings`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

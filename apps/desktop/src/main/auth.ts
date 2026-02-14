@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { getDb, persistDb } from "./store";
 import { getConfig, fetchServerSettings, startSettingsSync } from "./config";
+import { electronFetch } from "./net-fetch";
 import type { AuthCredentials, AuthSession } from "../shared/types";
 
 export function getStoredSession(): AuthSession | null {
@@ -59,7 +60,7 @@ async function login(
   const url = `${config.serverUrl}/api/auth/sign-in/email`;
 
   try {
-    const response = await fetch(url, {
+    const response = await electronFetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -96,7 +97,7 @@ async function login(
     }
 
     const cookieName = sessionCookieName(config.serverUrl);
-    const sessionResponse = await fetch(`${config.serverUrl}/api/auth/get-session`, {
+    const sessionResponse = await electronFetch(`${config.serverUrl}/api/auth/get-session`, {
       headers: {
         Cookie: `${cookieName}=${token}`,
         Origin: config.serverUrl,
@@ -109,7 +110,7 @@ async function login(
 
     const sessionData = await sessionResponse.json() as { user: AuthSession["user"] };
 
-    const memberResponse = await fetch(`${config.serverUrl}/api/v1/time-entries?limit=1`, {
+    const memberResponse = await electronFetch(`${config.serverUrl}/api/v1/time-entries?limit=1`, {
       headers: {
         Cookie: `${cookieName}=${token}`,
         Origin: config.serverUrl,
@@ -161,7 +162,7 @@ export async function verifyToken(): Promise<boolean> {
   const config = getConfig();
   try {
     const cookieName = sessionCookieName(config.serverUrl);
-    const response = await fetch(`${config.serverUrl}/api/auth/get-session`, {
+    const response = await electronFetch(`${config.serverUrl}/api/auth/get-session`, {
       headers: {
         Cookie: `${cookieName}=${session.token}`,
         Origin: config.serverUrl,
@@ -219,7 +220,7 @@ export function registerAuthHandlers() {
       const config = getConfig();
       try {
         const cookieName = sessionCookieName(config.serverUrl);
-        await fetch(`${config.serverUrl}/api/auth/sign-out`, {
+        await electronFetch(`${config.serverUrl}/api/auth/sign-out`, {
           method: "POST",
           headers: {
             Cookie: `${cookieName}=${session.token}`,

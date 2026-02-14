@@ -2,6 +2,7 @@ import { ipcMain } from "electron";
 import { getDb, persistDb } from "./store";
 import { getConfig } from "./config";
 import { getAuthHeaders, getStoredSession } from "./auth";
+import { electronFetch } from "./net-fetch";
 import { getMainWindow } from "./index";
 import { updateTrayMenu, getTray } from "./tray";
 import { scheduleNextScreenshot, cancelScreenshotSchedule } from "./screenshot";
@@ -97,7 +98,7 @@ async function startTimer(data: {
   let projectName: string | null = null;
 
   try {
-    const response = await fetch(`${config.serverUrl}/api/v1/time-entries`, {
+    const response = await electronFetch(`${config.serverUrl}/api/v1/time-entries`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -178,7 +179,7 @@ export async function stopTimer(): Promise<{
 
   if (state.currentEntryId && !state.currentEntryId.startsWith("local_")) {
     try {
-      await fetch(`${config.serverUrl}/api/v1/time-entries`, {
+      await electronFetch(`${config.serverUrl}/api/v1/time-entries`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

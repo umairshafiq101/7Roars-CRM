@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { getConfig } from "./config";
 import { getAuthHeaders, getStoredSession } from "./auth";
+import { electronFetch } from "./net-fetch";
 import type { Project } from "../shared/types";
 
 let cachedProjects: Project[] = [];
@@ -19,7 +20,7 @@ async function fetchProjects(): Promise<Project[]> {
   const config = getConfig();
 
   try {
-    const response = await fetch(
+    const response = await electronFetch(
       `${config.serverUrl}/api/v1/projects`,
       {
         headers: {
