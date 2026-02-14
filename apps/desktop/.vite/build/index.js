@@ -162,12 +162,19 @@ function clearSession() {
   db2.run("DELETE FROM auth WHERE key = ?", ["session"]);
   persistDb();
 }
+function isSecureServer(url) {
+  return url.startsWith("https://");
+}
+function sessionCookieName(serverUrl) {
+  return isSecureServer(serverUrl) ? "__Secure-better-auth.session_token" : "better-auth.session_token";
+}
 function getAuthHeaders() {
   const session = getStoredSession();
   const config = getConfig();
   if (!session) return { Origin: config.serverUrl };
+  const cookieName = sessionCookieName(config.serverUrl);
   return {
-    Cookie: `better-auth.session_token=${session.token}`,
+    Cookie: `${cookieName}=${session.token}`,
     Origin: config.serverUrl
   };
 }
@@ -198,15 +205,18 @@ async function login(credentials) {
     const setCookieHeader = response.headers.get("set-cookie");
     let token = data.token || "";
     if (setCookieHeader) {
-      const match = setCookieHeader.match(/better-auth\.session_token=([^;]+)/);
-      if (match) token = match[1];
+      const secureMatch = setCookieHeader.match(/__Secure-better-auth\.session_token=([^;]+)/);
+      const plainMatch = setCookieHeader.match(/better-auth\.session_token=([^;]+)/);
+      if (secureMatch) token = secureMatch[1];
+      else if (plainMatch) token = plainMatch[1];
     }
     if (!token) {
       return { success: false, error: "No session token received" };
     }
+    const cookieName = sessionCookieName(config.serverUrl);
     const sessionResponse = await fetch(`${config.serverUrl}/api/auth/get-session`, {
       headers: {
-        Cookie: `better-auth.session_token=${token}`,
+        Cookie: `${cookieName}=${token}`,
         Origin: config.serverUrl
       }
     });
@@ -216,7 +226,7 @@ async function login(credentials) {
     const sessionData = await sessionResponse.json();
     const memberResponse = await fetch(`${config.serverUrl}/api/v1/time-entries?limit=1`, {
       headers: {
-        Cookie: `better-auth.session_token=${token}`,
+        Cookie: `${cookieName}=${token}`,
         Origin: config.serverUrl
       }
     });
@@ -256,9 +266,10 @@ async function verifyToken() {
   if (!session) return false;
   const config = getConfig();
   try {
+    const cookieName = sessionCookieName(config.serverUrl);
     const response = await fetch(`${config.serverUrl}/api/auth/get-session`, {
       headers: {
-        Cookie: `better-auth.session_token=${session.token}`,
+        Cookie: `${cookieName}=${session.token}`,
         Origin: config.serverUrl
       }
     });
@@ -296,10 +307,11 @@ function registerAuthHandlers() {
     if (session) {
       const config = getConfig();
       try {
+        const cookieName = sessionCookieName(config.serverUrl);
         await fetch(`${config.serverUrl}/api/auth/sign-out`, {
           method: "POST",
           headers: {
-            Cookie: `better-auth.session_token=${session.token}`,
+            Cookie: `${cookieName}=${session.token}`,
             Origin: config.serverUrl
           }
         });
@@ -313,7 +325,7 @@ function registerAuthHandlers() {
   });
 }
 const DEFAULT_CONFIG = {
-  serverUrl: "http://localhost:3000",
+  serverUrl: "https://os.7roars.com",
   screenshotInterval: { min: 5, max: 10 },
   activityInterval: 60,
   blurScreenshots: false,

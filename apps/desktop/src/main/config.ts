@@ -4,7 +4,7 @@ import { getAuthHeaders, getStoredSession } from "./auth";
 import type { AppConfig } from "../shared/types";
 
 const DEFAULT_CONFIG: AppConfig = {
-  serverUrl: "http://localhost:3000",
+  serverUrl: "https://os.7roars.com",
   screenshotInterval: { min: 5, max: 10 },
   activityInterval: 60,
   blurScreenshots: false,
