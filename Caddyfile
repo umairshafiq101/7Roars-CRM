@@ -1,7 +1,7 @@
 # Replace os.7roars.com with your actual domain
 # Caddy auto-provisions HTTPS via Let's Encrypt
 
-{$DOMAIN:os.7roars.com} {
+os.7roars.com {
 	reverse_proxy web:3000
 
 	# Gzip compression
