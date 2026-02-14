@@ -20,10 +20,11 @@ services:
   db:
     image: postgres:17-alpine
     restart: always
+    env_file: .env.production
     environment:
       POSTGRES_DB: agency_os
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env.production}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
