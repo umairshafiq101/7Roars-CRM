@@ -43,8 +43,9 @@ model TimeEntry {
   user         User      @relation(fields: [user_id], references: [id])
   project      Project?  @relation(fields: [project_id], references: [id])
   task         Task?     @relation(fields: [task_id], references: [id])
-  screenshots  Screenshot[]
-  activities   ActivityLog[]
+  screenshots    Screenshot[]
+  activities     ActivityLog[]
+  app_usage_logs AppUsageLog[]
 }
 
 model Screenshot {
@@ -75,4 +76,44 @@ model ActivityLog {
 
   user              User      @relation(fields: [user_id], references: [id])
   time_entry        TimeEntry? @relation(fields: [time_entry_id], references: [id])
+}
+
+model AppUsageLog {
+  id              String     @id @default(cuid())
+  user_id         String
+  time_entry_id   String?
+  app_name        String
+  window_title    String?
+  url             String?
+  duration        Int        @default(0)
+  interval_start  DateTime
+  interval_end    DateTime
+  is_productive   Boolean?
+  created_at      DateTime   @default(now())
+
+  user            User       @relation(fields: [user_id], references: [id])
+  time_entry      TimeEntry? @relation(fields: [time_entry_id], references: [id])
+
+  @@index([user_id, interval_start])
+  @@index([app_name])
+}
+
+model AppClassification {
+  id              String      @id @default(cuid())
+  organization_id String
+  app_name        String
+  category        AppCategory @default(UNCLASSIFIED)
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  organization    Organization @relation(fields: [organization_id], references: [id])
+
+  @@unique([organization_id, app_name])
+}
+
+enum AppCategory {
+  PRODUCTIVE
+  UNPRODUCTIVE
+  NEUTRAL
+  UNCLASSIFIED
 }

@@ -3,9 +3,10 @@ import { getDb, persistDb } from "./store";
 import { getConfig } from "./config";
 import { getAuthHeaders, getStoredSession } from "./auth";
 import { getMainWindow } from "./index";
-import { updateTrayMenu } from "./tray";
+import { updateTrayMenu, getTray } from "./tray";
 import { scheduleNextScreenshot, cancelScreenshotSchedule } from "./screenshot";
-import { resetActivityCounts } from "./activity";
+import { resetActivityCounts, startActivityLogging, stopActivityLogging, startIdleDetection, stopIdleDetection, getIdleSeconds } from "./activity";
+import { startAppTracking, stopAppTracking } from "./app-tracker";
 import type { TimerState } from "../shared/types";
 
 let tickInterval: ReturnType<typeof setInterval> | null = null;
@@ -38,7 +39,7 @@ export function getTimerState(): TimerState {
 function saveTimerState(state: Partial<TimerState>) {
   const db = getDb();
   const sets: string[] = [];
-  const values: unknown[] = [];
+  const values: (string | number | null)[] = [];
 
   if (state.isRunning !== undefined) {
     sets.push("is_running = ?");
@@ -149,6 +150,9 @@ async function startTimer(data: {
   startTickLoop();
   scheduleNextScreenshot();
   resetActivityCounts();
+  startActivityLogging();
+  startIdleDetection();
+  startAppTracking();
   updateTrayMenu();
 
   return { success: true, entryId };
@@ -165,6 +169,9 @@ export async function stopTimer(): Promise<{
 
   stopTickLoop();
   cancelScreenshotSchedule();
+  stopActivityLogging();
+  stopIdleDetection();
+  stopAppTracking();
 
   const endTime = new Date().toISOString();
   const config = getConfig();
@@ -227,6 +234,18 @@ function startTickLoop() {
     if (win) {
       win.webContents.send("timer:tick", state.elapsed);
     }
+
+    // D3: Live tray tooltip update every tick
+    const trayInstance = getTray();
+    if (trayInstance) {
+      const el = state.elapsed;
+      const hours = Math.floor(el / 3600);
+      const minutes = Math.floor((el % 3600) / 60);
+      const seconds = el % 60;
+      trayInstance.setToolTip(
+        `7Roars Agent — ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")} ${state.projectName || ""}`
+      );
+    }
   }, 1000);
 }
 
@@ -261,10 +280,25 @@ export function registerTimerHandlers() {
     return getTimerState();
   });
 
+  // Idle IPC handlers
+  ipcMain.handle("idle:dismiss", () => {
+    // User chose to keep tracking — just reset idle notification state
+    console.log("[TIMER] Idle dismissed by user");
+  });
+
+  ipcMain.handle("idle:discard", async () => {
+    // User chose to discard idle time — stop timer
+    console.log("[TIMER] Idle discard — stopping timer");
+    await stopTimer();
+  });
+
   // Resume timer if it was running when app closed
   const state = getTimerState();
   if (state.isRunning) {
     startTickLoop();
     scheduleNextScreenshot();
+    startActivityLogging();
+    startIdleDetection();
+    startAppTracking();
   }
 }

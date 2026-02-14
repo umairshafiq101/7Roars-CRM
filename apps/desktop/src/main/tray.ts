@@ -111,6 +111,10 @@ export function updateTrayMenu(mainWindow?: BrowserWindow) {
   }
 }
 
+export function getTray(): Tray | null {
+  return tray;
+}
+
 export function destroyTray() {
   if (tray) {
     tray.destroy();

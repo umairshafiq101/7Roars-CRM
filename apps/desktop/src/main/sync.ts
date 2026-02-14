@@ -1,10 +1,15 @@
 import fs from "node:fs";
+import { ipcMain } from "electron";
 import { getDb, persistDb } from "./store";
 import { getConfig } from "./config";
 import { getAuthHeaders, getStoredSession } from "./auth";
 import { getTimerState } from "./timer";
+import { getMainWindow } from "./index";
+import type { SyncStatus } from "../shared/types";
 
 let syncInterval: ReturnType<typeof setInterval> | null = null;
+let lastSyncConnected = false;
+let lastSyncAt: string | null = null;
 
 export function startSyncLoop() {
   if (syncInterval) return;
@@ -23,6 +28,30 @@ export function stopSyncLoop() {
     clearInterval(syncInterval);
     syncInterval = null;
   }
+}
+
+export function getSyncStatus(): SyncStatus {
+  const db = getDb();
+  const results = db.exec("SELECT COUNT(*) FROM offline_queue");
+  const queueSize = results.length > 0 ? (results[0].values[0][0] as number) : 0;
+  return {
+    connected: lastSyncConnected,
+    queueSize,
+    lastSyncAt,
+  };
+}
+
+function emitSyncStatus() {
+  const win = getMainWindow();
+  if (win) {
+    win.webContents.send("sync:status", getSyncStatus());
+  }
+}
+
+export function registerSyncHandlers() {
+  ipcMain.handle("sync:get-status", () => {
+    return getSyncStatus();
+  });
 }
 
 interface QueueRow {
@@ -70,6 +99,9 @@ async function processQueue() {
         case "activity":
           success = await syncActivity(item.payload);
           break;
+        case "app_usage":
+          success = await syncAppUsage(item.payload);
+          break;
         default:
           console.warn(`[SYNC] Unknown queue item type: ${item.type}`);
           success = true;
@@ -102,6 +134,10 @@ async function processQueue() {
 
   db.run("DELETE FROM offline_queue WHERE retries > 10");
   persistDb();
+
+  lastSyncConnected = true;
+  lastSyncAt = new Date().toISOString();
+  emitSyncStatus();
 }
 
 async function syncTimeEntry(payload: string): Promise<boolean> {
@@ -163,9 +199,17 @@ async function syncScreenshot(
   const blob = new Blob([fileBuffer], { type: "image/webp" });
   formData.append("file", blob, `screenshot_${Date.now()}.webp`);
 
+  // C4: Upload thumbnail as separate field if available
+  if (data.thumb_path && fs.existsSync(data.thumb_path)) {
+    const thumbBuffer = fs.readFileSync(data.thumb_path);
+    const thumbBlob = new Blob([thumbBuffer], { type: "image/webp" });
+    formData.append("thumbnail", thumbBlob, `thumb_${Date.now()}.webp`);
+  }
+
   const metadata: Record<string, unknown> = {
     activity_level: data.activity_level || 0,
     captured_at: data.captured_at,
+    is_blurred: data.is_blurred || false,
   };
   if (data.time_entry_id && !data.time_entry_id.startsWith("local_")) {
     metadata.time_entry_id = data.time_entry_id;
@@ -190,6 +234,10 @@ async function syncScreenshot(
     console.error(`[SYNC] Screenshot upload failed (${response.status}):`, text.substring(0, 300));
   } else {
     console.log(`[SYNC] Screenshot uploaded successfully`);
+    // Clean up thumbnail file after successful sync
+    if (data.thumb_path) {
+      try { fs.unlinkSync(data.thumb_path); } catch { /* ignore */ }
+    }
   }
 
   return response.ok;
@@ -216,6 +264,30 @@ async function sendHeartbeat(): Promise<void> {
   } catch {
     // Heartbeat failure is non-critical
   }
+}
+
+async function syncAppUsage(payload: string): Promise<boolean> {
+  const config = getConfig();
+  const data = JSON.parse(payload);
+
+  const body: Record<string, unknown> = {
+    entries: data.entries,
+  };
+
+  if (data.time_entry_id && !data.time_entry_id.startsWith("local_")) {
+    body.time_entry_id = data.time_entry_id;
+  }
+
+  const response = await fetch(`${config.serverUrl}/api/v1/app-usage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(body),
+  });
+
+  return response.ok;
 }
 
 async function syncActivity(payload: string): Promise<boolean> {

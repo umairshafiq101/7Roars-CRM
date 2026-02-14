@@ -1,16 +1,17 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, powerMonitor } from "electron";
 import path from "node:path";
 
 // Enable remote debugging for E2E testing
 app.commandLine.appendSwitch("remote-debugging-port", "9222");
 
 import { createTray, destroyTray } from "./tray";
-import { registerAuthHandlers } from "./auth";
-import { registerTimerHandlers, stopTimer } from "./timer";
+import { registerAuthHandlers, startTokenRefreshLoop } from "./auth";
+import { registerTimerHandlers, stopTimer, getTimerState } from "./timer";
 import { registerProjectHandlers } from "./projects";
 import { registerConfigHandlers, getConfig, startSettingsSync } from "./config";
-import { initStore } from "./store";
-import { startSyncLoop } from "./sync";
+import { initStore, startCleanupLoop } from "./store";
+import { startDailySummarySchedule } from "./notifications";
+import { startSyncLoop, registerSyncHandlers } from "./sync";
 import { startActivityTracking, stopActivityTracking } from "./activity";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -95,13 +96,63 @@ app.on("ready", async () => {
   registerTimerHandlers();
   registerProjectHandlers();
   registerConfigHandlers();
+  registerSyncHandlers();
 
   startSyncLoop();
   startSettingsSync();
+  startTokenRefreshLoop();
+  startCleanupLoop();
+  startDailySummarySchedule();
 
+  // Start uiohook global hooks once (always listening for input events)
+  // Activity *logging* and idle detection are started/stopped with the timer
   const config = getConfig();
   if (config.serverUrl) {
     startActivityTracking();
+  }
+
+  // A5: System lock/sleep detection — auto-stop timer
+  powerMonitor.on("lock-screen", async () => {
+    console.log("[POWER] Screen locked — stopping timer");
+    const timerState = getTimerState();
+    if (timerState.isRunning) {
+      await stopTimer();
+      if (mainWindow) {
+        mainWindow.webContents.send("power:locked");
+      }
+    }
+  });
+
+  powerMonitor.on("suspend", async () => {
+    console.log("[POWER] System suspended — stopping timer");
+    const timerState = getTimerState();
+    if (timerState.isRunning) {
+      await stopTimer();
+      if (mainWindow) {
+        mainWindow.webContents.send("power:suspended");
+      }
+    }
+  });
+
+  powerMonitor.on("unlock-screen", () => {
+    console.log("[POWER] Screen unlocked");
+    if (mainWindow) {
+      mainWindow.webContents.send("power:unlocked");
+    }
+  });
+
+  powerMonitor.on("resume", () => {
+    console.log("[POWER] System resumed");
+    if (mainWindow) {
+      mainWindow.webContents.send("power:resumed");
+    }
+  });
+
+  // D5: Auto-start on boot (background mode)
+  if (config.backgroundMode) {
+    app.setLoginItemSettings({ openAtLogin: true });
+  } else {
+    app.setLoginItemSettings({ openAtLogin: false });
   }
 });
 

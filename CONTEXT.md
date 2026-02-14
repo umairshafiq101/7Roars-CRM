@@ -121,7 +121,41 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
     - [x] BUG-016: Time entry edit button + inline form
     - [x] BUG-017: API input length validation (.max())
   - [x] 4.4 Regression Testing ✅ PASSED (20/22 tests pass, 2 skipped)
-  - [ ] 4.5 Production deploy ← NEXT
+  - [x] 4.5 Production deploy config ✅ COMPLETE (Hostinger VPS)
+    - [x] 4.5.1 Docker Compose production stack (web + db + caddy + redis)
+    - [x] 4.5.2 Caddy reverse proxy with auto-HTTPS (Let's Encrypt)
+    - [x] 4.5.3 GitHub Actions CI/CD (typecheck + SSH deploy to VPS)
+    - [x] 4.5.4 GitHub Actions desktop .exe build on tagged releases
+    - [x] 4.5.5 Deploy scripts (setup-vps.sh, deploy.sh)
+    - [x] 4.5.6 .env.production.example + DEPLOYMENT-GUIDE.md
+    - [x] 4.5.7 Desktop build scripts + app icon
+    - [ ] 4.5.8 VPS setup (manual — SSH, clone, start — see DEPLOYMENT-GUIDE.md)
+    - [ ] 4.5.9 DNS A record (manual — point domain to VPS IP)
+- [x] Phase 5: Worktivity-Style Desktop Agent Upgrade ✅ COMPLETE
+  - [x] 5.A1 Fix activity tracking lifecycle (start/stop with timer)
+  - [x] 5.A2 Throttle mouse move events (500ms debounce, separate click/move counts)
+  - [x] 5.A3 Time-bucketed activity % (1-second slot tracking via Set)
+  - [x] 5.A4 Idle detection + auto-pause (configurable thresholds, idle dialog UI)
+  - [x] 5.A5 System lock/sleep detection (powerMonitor auto-stop)
+  - [x] 5.B1-B2 AppUsageLog + AppClassification Prisma models
+  - [x] 5.B3 Desktop app-tracker.ts (active window polling via PowerShell)
+  - [x] 5.B4-B5 App usage REST API + sync
+  - [x] 5.B6 Web App Usage page (/app-usage) with classification UI
+  - [x] 5.C1 Screenshot blur (sharp.blur(15) when screenshotMode=blurred)
+  - [x] 5.C2 Screenshot disable (screenshotMode=disabled)
+  - [x] 5.C3 Multi-monitor screenshots (cursor display detection)
+  - [x] 5.C4 Thumbnail generation (320px WebP, separate upload)
+  - [x] 5.C5 Recent screenshots helper for review panel
+  - [x] 5.D1 Connection status indicator (sync dot + queue badge)
+  - [x] 5.D2 Token refresh (30-min session validation loop)
+  - [x] 5.D3 Tray live tooltip (HH:MM:SS + project name)
+  - [x] 5.D4 Queue cleanup (hourly: 7-day screenshots, 500-item cap)
+  - [x] 5.D5 Auto-start on boot (backgroundMode config)
+  - [x] 5.D6 Daily summary notification (native Notification at workdayEnd)
+  - [x] 5.E1 Productivity analysis page (/productivity)
+  - [x] 5.E3-E4 App classifications API (GET/PUT /api/v1/app-classifications)
+  - [ ] 5.E2 Dashboard enhancements (productivity widget) ← OPTIONAL NEXT
+  - [x] 5.E2E Phase 5 E2E Testing ✅ COMPLETE (37/52 passed, 0 failed, 14 skipped)
 
 ### Phase 3 Bug Fixes (Session 3b)
 - [x] Fix: package.json `main` → `.vite/build/index.js` (not `main.js`)
@@ -140,19 +174,32 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 
 ## Known Issues / Blockers
 - 28 total bugs found, **27 fixed**, 1 known cosmetic (see BUGS.md)
-- BUG-025: Zod rejected null project_id from desktop agent — **FIXED** in Session 8
-- BUG-026: Desktop Sign Out button hidden behind titleBarOverlay — **FIXED** in Session 9
-- BUG-027: Screenshot interval ignored web settings (hardcoded) — **FIXED** in Session 9 (desktop fetches from `/api/v1/settings`)
-- BUG-028: Team page showed 0 Online despite agent running — **FIXED** in Session 9 (REST heartbeat replaces Socket.io)
 - BUG-024: Timesheet edit form shows UTC times instead of local — **KNOWN** (cosmetic, low priority)
 - Socket.io server not yet integrated into Next.js dev server — mitigated by REST heartbeat polling
 - Rate limiting not yet implemented on API endpoints
+- Pre-existing lint: `WebkitAppRegion` in Timer.tsx — Electron CSS property not in React CSSProperties type (cosmetic, works at runtime)
+- **After Phase 5:** Run `npx prisma db push` to apply new `AppUsageLog` + `AppClassification` models
+- App tracker uses PowerShell on Windows — macOS support via AppleScript (untested)
 - **Full screenshot pipeline verified:** timer start → screenshot capture → sync → web dashboard (10+ screenshots)
 - E2E Testing Round 1: **PASSED** (20/22 tests, 2 skipped)
 - E2E Testing Round 2: **25/27 passed**, 2 skipped (PDF export, screenshot interval wait)
 - All edge cases passed: empty forms, XSS, SQL injection, large upload, duplicate registration
 - Desktop agent E2E: login, start/stop timer, project switch, screenshot pipeline all working
 - See `LOCAL-SETUP-GUIDE.md` for running both apps locally
+
+## New Files Added in Phase 5
+### Desktop Agent
+- `apps/desktop/src/main/app-tracker.ts` — Active window tracking (PowerShell)
+- `apps/desktop/src/main/notifications.ts` — Daily summary notification
+
+### Web Application
+- `apps/web/app/api/v1/app-usage/route.ts` — App usage REST API
+- `apps/web/app/api/v1/app-classifications/route.ts` — App classification REST API
+- `apps/web/app/(dashboard)/app-usage/page.tsx` — App Usage dashboard page
+- `apps/web/app/(dashboard)/productivity/page.tsx` — Productivity analysis page
+- `apps/web/actions/app-usage.ts` — App usage server actions
+- `apps/web/actions/productivity.ts` — Productivity server actions
+- `apps/web/lib/validations/app-usage.ts` — Zod schemas for app usage
 
 ## Default Login
 - Register a new account via the web app at http://localhost:3000

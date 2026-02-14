@@ -138,6 +138,61 @@ async function login(
   }
 }
 
+let tokenCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+export async function verifyToken(): Promise<boolean> {
+  const session = getStoredSession();
+  if (!session) return false;
+
+  const config = getConfig();
+  try {
+    const response = await fetch(`${config.serverUrl}/api/auth/get-session`, {
+      headers: {
+        Cookie: `better-auth.session_token=${session.token}`,
+        Origin: config.serverUrl,
+      },
+    });
+
+    if (response.ok) {
+      return true;
+    }
+
+    if (response.status === 401) {
+      console.warn("[AUTH] Token expired or invalid — clearing session");
+      clearSession();
+      // Dynamic import to avoid circular dependency (auth ↔ index)
+      const { getMainWindow } = await import("./index");
+      const win = getMainWindow();
+      if (win) {
+        win.webContents.send("auth:required");
+      }
+      return false;
+    }
+
+    return true; // Non-401 errors (network issues) — don't invalidate
+  } catch {
+    // Network error — don't invalidate, just return true
+    return true;
+  }
+}
+
+export function startTokenRefreshLoop() {
+  if (tokenCheckInterval) return;
+  // Check on start
+  verifyToken();
+  // Then every 30 minutes
+  tokenCheckInterval = setInterval(() => {
+    verifyToken();
+  }, 30 * 60 * 1000);
+}
+
+export function stopTokenRefreshLoop() {
+  if (tokenCheckInterval) {
+    clearInterval(tokenCheckInterval);
+    tokenCheckInterval = null;
+  }
+}
+
 export function registerAuthHandlers() {
   ipcMain.handle("auth:login", async (_event, credentials: AuthCredentials) => {
     return login(credentials);

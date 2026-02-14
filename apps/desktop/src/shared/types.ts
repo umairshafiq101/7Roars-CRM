@@ -53,7 +53,7 @@ export interface ScreenshotData {
 
 export interface QueueItem {
   id: number;
-  type: "time_entry" | "screenshot" | "activity";
+  type: "time_entry" | "screenshot" | "activity" | "app_usage";
   payload: string;
   created_at: string;
   retries: number;
@@ -74,6 +74,37 @@ export interface AppConfig {
   screenshotInterval: { min: number; max: number };
   activityInterval: number;
   blurScreenshots: boolean;
+  screenshotMode: "enabled" | "blurred" | "disabled";
+  idleThreshold: number; // minutes before idle detection
+  autoStopThreshold: number; // minutes before auto-stop timer
+  backgroundMode: boolean;
+  appTrackingEnabled: boolean;
+  workdayEnd: string; // HH:mm
+}
+
+export interface IdleState {
+  isIdle: boolean;
+  idleSeconds: number;
+}
+
+export interface SyncStatus {
+  connected: boolean;
+  queueSize: number;
+  lastSyncAt: string | null;
+}
+
+export interface AppUsageSample {
+  appName: string;
+  windowTitle: string;
+  timestamp: number;
+}
+
+export interface AppUsageInterval {
+  app_name: string;
+  window_title: string | null;
+  duration: number; // seconds
+  interval_start: string;
+  interval_end: string;
 }
 
 export type IpcChannels = {
@@ -93,4 +124,11 @@ export type IpcChannels = {
   // Config
   "config:get": () => Promise<AppConfig>;
   "config:set": (config: Partial<AppConfig>) => Promise<void>;
+
+  // Idle
+  "idle:dismiss": () => Promise<void>;
+  "idle:discard": () => Promise<void>;
+
+  // Sync status
+  "sync:get-status": () => Promise<SyncStatus>;
 };

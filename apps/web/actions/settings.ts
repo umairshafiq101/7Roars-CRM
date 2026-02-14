@@ -41,8 +41,8 @@ export async function getSettings(): Promise<ApiResponse> {
 
     const serializedOrg = org ? {
       ...org,
-      createdAt: org.createdAt instanceof Date ? org.createdAt.toISOString() : org.createdAt,
-      updatedAt: org.updatedAt instanceof Date ? org.updatedAt.toISOString() : org.updatedAt,
+      created_at: org.created_at instanceof Date ? org.created_at.toISOString() : org.created_at,
+      updated_at: org.updated_at instanceof Date ? org.updated_at.toISOString() : org.updated_at,
     } : null;
 
     return ok({ organization: serializedOrg, settings: settingsMap });

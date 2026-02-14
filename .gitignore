@@ -4,5 +4,13 @@ dist
 .turbo
 .env
 .env.local
+.env.production
 *.log
 .DS_Store
+
+# Desktop agent build output
+apps/desktop/out/
+apps/desktop/.vite/
+
+# Uploads (local screenshot fallback)
+apps/web/public/uploads/

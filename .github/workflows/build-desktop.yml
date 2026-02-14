@@ -1,0 +1,76 @@
+name: Build Desktop Agent
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. 1.0.0)'
+        required: false
+        default: 'dev'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build desktop agent
+        run: pnpm --filter @7roars/desktop make
+        env:
+          NODE_ENV: production
+
+      - name: Find installer
+        id: find-exe
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path "apps/desktop/out/make" -Recurse -Filter "*.exe" | Select-Object -First 1
+          echo "EXE_PATH=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+          echo "EXE_NAME=$($exe.Name)" >> $env:GITHUB_OUTPUT
+          echo "Found installer: $($exe.FullName)"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7RoarsAgent-Windows-Installer
+          path: apps/desktop/out/make/**/*.exe
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/desktop-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apps/desktop/out/make/**/*.exe
+          name: "Desktop Agent ${{ github.ref_name }}"
+          body: |
+            ## 7Roars Desktop Agent
+
+            ### Installation
+            1. Download `7RoarsAgentSetup.exe` below
+            2. Run the installer
+            3. Launch "7Roars Agent" from Start Menu
+            4. Click "Server Settings" and enter your server URL
+            5. Login with your credentials
+
+            ### What's New
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          draft: false
+          prerelease: false

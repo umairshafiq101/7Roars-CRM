@@ -21,6 +21,13 @@ const api = {
   setConfig: (config: Record<string, unknown>) =>
     ipcRenderer.invoke("config:set", config),
 
+  // Idle
+  idleDismiss: () => ipcRenderer.invoke("idle:dismiss"),
+  idleDiscard: () => ipcRenderer.invoke("idle:discard"),
+
+  // Sync status
+  getSyncStatus: () => ipcRenderer.invoke("sync:get-status"),
+
   // Events from main process
   onTimerTick: (callback: (elapsed: number) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, elapsed: number) =>
@@ -43,6 +50,37 @@ const api = {
     const handler = () => callback();
     ipcRenderer.on("auth:required", handler);
     return () => ipcRenderer.removeListener("auth:required", handler);
+  },
+  onIdleDetected: (callback: (data: { idleSeconds: number }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { idleSeconds: number }) =>
+      callback(data);
+    ipcRenderer.on("idle:detected", handler);
+    return () => ipcRenderer.removeListener("idle:detected", handler);
+  },
+  onIdleAutoStop: (callback: (data: { idleSeconds: number; trimSeconds: number }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { idleSeconds: number; trimSeconds: number }) =>
+      callback(data);
+    ipcRenderer.on("idle:auto-stop", handler);
+    return () => ipcRenderer.removeListener("idle:auto-stop", handler);
+  },
+  onSyncStatus: (callback: (data: { connected: boolean; queueSize: number; lastSyncAt: string | null }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { connected: boolean; queueSize: number; lastSyncAt: string | null }) =>
+      callback(data);
+    ipcRenderer.on("sync:status", handler);
+    return () => ipcRenderer.removeListener("sync:status", handler);
+  },
+  onPowerEvent: (callback: (event: string) => void) => {
+    const events = ["power:locked", "power:suspended", "power:unlocked", "power:resumed"];
+    const handlers = events.map((evt) => {
+      const handler = () => callback(evt);
+      ipcRenderer.on(evt, handler);
+      return { evt, handler };
+    });
+    return () => {
+      for (const { evt, handler } of handlers) {
+        ipcRenderer.removeListener(evt, handler);
+      }
+    };
   },
 };
 

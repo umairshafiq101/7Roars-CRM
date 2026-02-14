@@ -8,7 +8,10 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "db:push": "pnpm --filter web db:push",
-    "db:generate": "pnpm --filter web db:generate"
+    "db:generate": "pnpm --filter web db:generate",
+    "desktop:start": "pnpm --filter @7roars/desktop start",
+    "desktop:package": "pnpm --filter @7roars/desktop package",
+    "desktop:make": "pnpm --filter @7roars/desktop make"
   },
   "devDependencies": {
     "playwright": "^1.58.2",

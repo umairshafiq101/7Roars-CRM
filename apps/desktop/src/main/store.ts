@@ -87,3 +87,75 @@ export function closeStore(): void {
     db = null;
   }
 }
+
+// D4: Cleanup old data — delete old screenshots and cap queue size
+export function cleanupOldData(): void {
+  if (!db) return;
+
+  try {
+    // Delete screenshot files older than 7 days from userData/screenshots/
+    const { app } = require("electron");
+    const path = require("node:path");
+    const fs = require("node:fs");
+    const screenshotsDir = path.join(app.getPath("userData"), "screenshots");
+
+    if (fs.existsSync(screenshotsDir)) {
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const files = fs.readdirSync(screenshotsDir) as string[];
+      let deleted = 0;
+
+      for (const file of files) {
+        const filePath = path.join(screenshotsDir, file);
+        try {
+          const stat = fs.statSync(filePath);
+          if (stat.mtimeMs < sevenDaysAgo) {
+            fs.unlinkSync(filePath);
+            deleted++;
+          }
+        } catch { /* ignore individual file errors */ }
+      }
+
+      if (deleted > 0) {
+        console.log(`[STORE] Cleaned up ${deleted} old screenshot files`);
+      }
+    }
+
+    // Cap offline_queue at 500 items — delete oldest excess
+    const countResult = db.exec("SELECT COUNT(*) FROM offline_queue");
+    const count = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+
+    if (count > 500) {
+      const excess = count - 500;
+      db.run(
+        `DELETE FROM offline_queue WHERE id IN (SELECT id FROM offline_queue ORDER BY created_at ASC LIMIT ${excess})`
+      );
+      console.log(`[STORE] Trimmed ${excess} excess queue items (was ${count}, now 500)`);
+    }
+
+    // Delete synced items older than 24 hours that have retries > 5
+    db.run("DELETE FROM offline_queue WHERE retries > 5 AND created_at < datetime('now', '-1 day')");
+
+    saveDb();
+  } catch (err) {
+    console.error("[STORE] Cleanup error:", err);
+  }
+}
+
+let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+export function startCleanupLoop(): void {
+  if (cleanupInterval) return;
+  // Run on start
+  cleanupOldData();
+  // Then every hour
+  cleanupInterval = setInterval(() => {
+    cleanupOldData();
+  }, 60 * 60 * 1000);
+}
+
+export function stopCleanupLoop(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+  }
+}

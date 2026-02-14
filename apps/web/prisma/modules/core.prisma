@@ -8,10 +8,11 @@ model Organization {
   updated_at DateTime @updatedAt
   deleted_at DateTime?
 
-  members    Member[]
-  projects   Project[]
-  clients    Client[]
-  settings_entries Setting[]
+  members             Member[]
+  projects            Project[]
+  clients             Client[]
+  settings_entries    Setting[]
+  app_classifications AppClassification[]
 }
 
 model User {
@@ -26,13 +27,14 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  members       Member[]
-  time_entries  TimeEntry[]
-  screenshots   Screenshot[]
-  activity_logs ActivityLog[]
-  audit_logs    AuditLog[]
-  sessions      Session[]
-  accounts      Account[]
+  members        Member[]
+  time_entries   TimeEntry[]
+  screenshots    Screenshot[]
+  activity_logs  ActivityLog[]
+  app_usage_logs AppUsageLog[]
+  audit_logs     AuditLog[]
+  sessions       Session[]
+  accounts       Account[]
 }
 
 model Member {

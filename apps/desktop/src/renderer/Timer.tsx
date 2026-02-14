@@ -10,6 +10,12 @@ interface TimerProps {
   onLogout: () => void;
 }
 
+interface SyncStatusData {
+  connected: boolean;
+  queueSize: number;
+  lastSyncAt: string | null;
+}
+
 export default function Timer({ onLogout }: TimerProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -20,12 +26,26 @@ export default function Timer({ onLogout }: TimerProps) {
   const [userName, setUserName] = useState("");
   const [lastScreenshot, setLastScreenshot] = useState<string | null>(null);
 
+  // Idle detection state
+  const [idleAlert, setIdleAlert] = useState<{ idleSeconds: number } | null>(null);
+
+  // Sync/connection status
+  const [syncStatus, setSyncStatus] = useState<SyncStatusData>({
+    connected: true,
+    queueSize: 0,
+    lastSyncAt: null,
+  });
+
+  // Power event notification
+  const [powerNotice, setPowerNotice] = useState<string | null>(null);
+
   const loadState = useCallback(async () => {
     try {
-      const [state, session, projectList] = await Promise.all([
+      const [state, session, projectList, syncSt] = await Promise.all([
         window.electronAPI.getTimerState(),
         window.electronAPI.getSession(),
         window.electronAPI.getProjects(),
+        window.electronAPI.getSyncStatus(),
       ]);
 
       setIsRunning(state.isRunning);
@@ -34,6 +54,7 @@ export default function Timer({ onLogout }: TimerProps) {
       if (state.description) setDescription(state.description);
       if (session?.user?.name) setUserName(session.user.name);
       setProjects(projectList || []);
+      if (syncSt) setSyncStatus(syncSt);
     } catch (err) {
       console.error("Failed to load state:", err);
     }
@@ -49,17 +70,48 @@ export default function Timer({ onLogout }: TimerProps) {
     const unsubStopped = window.electronAPI.onTimerStopped(() => {
       setIsRunning(false);
       setElapsed(0);
+      setIdleAlert(null);
     });
 
-    const unsubScreenshot = window.electronAPI.onScreenshotCaptured((data) => {
-      setLastScreenshot(data.path);
+    const unsubScreenshot = window.electronAPI.onScreenshotCaptured(() => {
+      setLastScreenshot("captured");
       setTimeout(() => setLastScreenshot(null), 3000);
+    });
+
+    const unsubIdle = window.electronAPI.onIdleDetected((data) => {
+      setIdleAlert(data);
+    });
+
+    const unsubIdleAutoStop = window.electronAPI.onIdleAutoStop(() => {
+      setIdleAlert(null);
+      setIsRunning(false);
+      setElapsed(0);
+    });
+
+    const unsubSync = window.electronAPI.onSyncStatus((data) => {
+      setSyncStatus(data);
+    });
+
+    const unsubPower = window.electronAPI.onPowerEvent((event) => {
+      if (event === "power:locked" || event === "power:suspended") {
+        setIsRunning(false);
+        setElapsed(0);
+        setPowerNotice("Timer stopped — system locked/suspended");
+        setTimeout(() => setPowerNotice(null), 5000);
+      } else if (event === "power:unlocked" || event === "power:resumed") {
+        setPowerNotice("System unlocked — start timer to resume tracking");
+        setTimeout(() => setPowerNotice(null), 5000);
+      }
     });
 
     return () => {
       unsubTick();
       unsubStopped();
       unsubScreenshot();
+      unsubIdle();
+      unsubIdleAutoStop();
+      unsubSync();
+      unsubPower();
     };
   }, [loadState]);
 
@@ -87,6 +139,7 @@ export default function Timer({ onLogout }: TimerProps) {
       if (result.success) {
         setIsRunning(false);
         setElapsed(0);
+        setIdleAlert(null);
       } else {
         setError(result.error || "Failed to stop timer");
       }
@@ -103,6 +156,18 @@ export default function Timer({ onLogout }: TimerProps) {
     onLogout();
   }
 
+  async function handleIdleDismiss() {
+    setIdleAlert(null);
+    await window.electronAPI.idleDismiss();
+  }
+
+  async function handleIdleDiscard() {
+    setIdleAlert(null);
+    await window.electronAPI.idleDiscard();
+    setIsRunning(false);
+    setElapsed(0);
+  }
+
   function formatTime(seconds: number): string {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -114,6 +179,27 @@ export default function Timer({ onLogout }: TimerProps) {
 
   return (
     <div style={styles.container}>
+      {/* Idle Alert Overlay */}
+      {idleAlert && (
+        <div style={styles.idleOverlay}>
+          <div style={styles.idleDialog}>
+            <div style={styles.idleIcon}>💤</div>
+            <div style={styles.idleTitle}>You've been idle</div>
+            <div style={styles.idleMessage}>
+              No activity for {Math.floor(idleAlert.idleSeconds / 60)} minutes.
+            </div>
+            <div style={styles.idleButtons}>
+              <button onClick={handleIdleDismiss} style={styles.idleKeepBtn}>
+                Keep Time
+              </button>
+              <button onClick={handleIdleDiscard} style={styles.idleDiscardBtn}>
+                Discard & Stop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
@@ -216,11 +302,29 @@ export default function Timer({ onLogout }: TimerProps) {
         <div style={styles.screenshotNotice}>📸 Screenshot captured</div>
       )}
 
-      {/* Status bar */}
+      {/* Power event notification */}
+      {powerNotice && (
+        <div style={styles.powerNotice}>{powerNotice}</div>
+      )}
+
+      {/* Status bar with connection indicator */}
       <div style={styles.statusBar}>
-        <span style={styles.statusText}>
-          {isRunning ? "Tracking active" : "Idle"}
-        </span>
+        <div style={styles.statusLeft}>
+          <span
+            style={{
+              ...styles.syncDot,
+              background: syncStatus.connected ? "#22c55e" : "#ef4444",
+            }}
+          />
+          <span style={styles.statusText}>
+            {isRunning ? "Tracking active" : "Idle"}
+          </span>
+        </div>
+        {syncStatus.queueSize > 0 && (
+          <span style={styles.queueText}>
+            {syncStatus.queueSize} queued
+          </span>
+        )}
       </div>
     </div>
   );
@@ -239,8 +343,8 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     padding: "12px 16px",
     borderBottom: "1px solid #1e293b",
-    WebkitAppRegion: "drag" as unknown as string,
-  },
+    WebkitAppRegion: "drag",
+  } as unknown as React.CSSProperties,
   headerLeft: {
     display: "flex",
     alignItems: "center",
@@ -264,8 +368,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     padding: "4px 10px",
     cursor: "pointer",
-    WebkitAppRegion: "no-drag" as unknown as string,
-  },
+    WebkitAppRegion: "no-drag",
+  } as unknown as React.CSSProperties,
   greeting: {
     display: "flex",
     alignItems: "center",
@@ -378,15 +482,106 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     textAlign: "center",
   },
+  powerNotice: {
+    margin: "8px 16px",
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: "rgba(234, 179, 8, 0.1)",
+    border: "1px solid rgba(234, 179, 8, 0.3)",
+    color: "#eab308",
+    fontSize: 12,
+    textAlign: "center",
+  },
   statusBar: {
     padding: "10px 16px",
     borderTop: "1px solid #1e293b",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+  },
+  statusLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
+  syncDot: {
+    width: 6,
+    height: 6,
+    borderRadius: "50%",
+    flexShrink: 0,
   },
   statusText: {
     fontSize: 11,
     color: "#64748b",
+  },
+  queueText: {
+    fontSize: 10,
+    color: "#94a3b8",
+    background: "rgba(148, 163, 184, 0.1)",
+    padding: "2px 6px",
+    borderRadius: 4,
+  },
+  // Idle dialog styles
+  idleOverlay: {
+    position: "fixed" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(0, 0, 0, 0.7)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  },
+  idleDialog: {
+    background: "#1e293b",
+    borderRadius: 16,
+    padding: "24px",
+    width: "85%",
+    maxWidth: 320,
+    textAlign: "center" as const,
+    border: "1px solid #334155",
+  },
+  idleIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  idleTitle: {
+    fontSize: 18,
+    fontWeight: 600,
+    color: "#f1f5f9",
+    marginBottom: 8,
+  },
+  idleMessage: {
+    fontSize: 13,
+    color: "#94a3b8",
+    marginBottom: 20,
+  },
+  idleButtons: {
+    display: "flex",
+    gap: 10,
+  },
+  idleKeepBtn: {
+    flex: 1,
+    padding: "10px 12px",
+    borderRadius: 8,
+    border: "1px solid #334155",
+    background: "transparent",
+    color: "#e2e8f0",
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: "pointer",
+  },
+  idleDiscardBtn: {
+    flex: 1,
+    padding: "10px 12px",
+    borderRadius: 8,
+    border: "none",
+    background: "linear-gradient(135deg, #ef4444, #dc2626)",
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: "pointer",
   },
 };

@@ -1,0 +1,25 @@
+# Replace os.7roars.com with your actual domain
+# Caddy auto-provisions HTTPS via Let's Encrypt
+
+{$DOMAIN:os.7roars.com} {
+	reverse_proxy web:3000
+
+	# Gzip compression
+	encode gzip
+
+	# Security headers
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Logs
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}

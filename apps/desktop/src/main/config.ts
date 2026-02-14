@@ -8,6 +8,12 @@ const DEFAULT_CONFIG: AppConfig = {
   screenshotInterval: { min: 5, max: 10 },
   activityInterval: 60,
   blurScreenshots: false,
+  screenshotMode: "enabled",
+  idleThreshold: 5,
+  autoStopThreshold: 15,
+  backgroundMode: false,
+  appTrackingEnabled: true,
+  workdayEnd: "18:00",
 };
 
 export function getConfig(): AppConfig {
@@ -70,6 +76,24 @@ export async function fetchServerSettings(): Promise<void> {
       }
       if (typeof s.screenshot_blur === "boolean") {
         updates.blurScreenshots = s.screenshot_blur;
+      }
+      if (typeof s.screenshot_mode === "string" && ["enabled", "blurred", "disabled"].includes(s.screenshot_mode as string)) {
+        updates.screenshotMode = s.screenshot_mode as AppConfig["screenshotMode"];
+      }
+      if (typeof s.idle_threshold === "number" && s.idle_threshold >= 1) {
+        updates.idleThreshold = s.idle_threshold;
+      }
+      if (typeof s.auto_stop_threshold === "number" && s.auto_stop_threshold >= 1) {
+        updates.autoStopThreshold = s.auto_stop_threshold;
+      }
+      if (typeof s.background_mode === "boolean") {
+        updates.backgroundMode = s.background_mode;
+      }
+      if (typeof s.app_tracking_enabled === "boolean") {
+        updates.appTrackingEnabled = s.app_tracking_enabled;
+      }
+      if (typeof s.workday_end === "string") {
+        updates.workdayEnd = s.workday_end;
       }
 
       if (Object.keys(updates).length > 0) {
