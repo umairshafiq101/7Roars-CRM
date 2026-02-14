@@ -22,7 +22,7 @@ docker compose -f "$COMPOSE_FILE" build web
 
 # Run database migrations
 echo "→ Running database migrations..."
-docker compose -f "$COMPOSE_FILE" run --rm web sh -c "cd apps/web && npx prisma db push"
+docker compose -f "$COMPOSE_FILE" --profile migrate run --rm migrate
 
 # Restart with zero-downtime (recreate only changed services)
 echo "→ Restarting services..."

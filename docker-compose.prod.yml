@@ -68,6 +68,22 @@ services:
         limits:
           memory: 256M
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    working_dir: /app/apps/web
+    command: ["npx", "prisma", "db", "push"]
+    profiles:
+      - migrate
+
 volumes:
   pgdata:
   uploads:
