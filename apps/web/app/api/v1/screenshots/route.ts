@@ -81,10 +81,11 @@ export async function POST(request: NextRequest) {
 
     const metadata = metadataStr
       ? uploadScreenshotSchema.parse(JSON.parse(metadataStr))
-      : { activity_level: 0 };
+      : { activity_level: 0, is_blurred: false };
 
     const capturedAt = metadata.captured_at ? new Date(metadata.captured_at) : new Date();
     const buffer = Buffer.from(await file.arrayBuffer());
+    const thumbnailFile = formData.get("thumbnail") as File | null;
 
     // Generate storage keys
     const imageKey = generateScreenshotKey(
@@ -97,8 +98,11 @@ export async function POST(request: NextRequest) {
     // Upload full image
     const imageUrl = await uploadFile(imageKey, buffer, file.type || "image/webp");
 
-    // Upload thumbnail (same image for now — desktop agent should send a smaller version)
-    const thumbnailUrl = await uploadFile(thumbnailKey, buffer, file.type || "image/webp");
+    // Upload thumbnail — use desktop agent's thumbnail if provided, otherwise use full image
+    const thumbBuffer = thumbnailFile
+      ? Buffer.from(await thumbnailFile.arrayBuffer())
+      : buffer;
+    const thumbnailUrl = await uploadFile(thumbnailKey, thumbBuffer, thumbnailFile?.type || file.type || "image/webp");
 
     const screenshot = await db.screenshot.create({
       data: {
@@ -107,6 +111,7 @@ export async function POST(request: NextRequest) {
         image_url: imageUrl,
         thumbnail_url: thumbnailUrl,
         activity_level: metadata.activity_level,
+        is_blurred: metadata.is_blurred ?? false,
         captured_at: capturedAt,
       },
     });

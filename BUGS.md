@@ -249,12 +249,30 @@ Pre-existing: BUG-024 (cosmetic, UTC times in edit form) remains the only open b
 
 ---
 
+## Session 6c Bugs (Activity Tracking Fix — 2026-02-17)
+
+### BUG-029: Screenshots always show 0% activity on web dashboard
+- **Severity:** High
+- **Status:** ✅ FIXED
+- **Files:** `apps/desktop/src/main/activity.ts`, `apps/web/lib/validations/screenshots.ts`, `apps/web/app/api/v1/screenshots/route.ts`
+- **Description:** All screenshots on the web dashboard display 0% activity level despite the user actively working. Three root causes:
+  1. **Partial-interval data:** `getCurrentActivityLevel()` reads `activeSlots.size / 60` but `activeSlots` is reset every 60s by the activity logging interval. Screenshots fire every 5-10 min, often right after a reset when slots are near-empty.
+  2. **Silent uiohook failure:** If `uiohook-napi` fails to load in the packaged Electron app (native module issue), the catch block swallows the error and no input events are ever registered — `activeSlots` stays empty forever.
+  3. **Zod strips `is_blurred`:** The `uploadScreenshotSchema` didn't include `is_blurred`, so Zod silently dropped it from metadata.
+- **Fix:**
+  1. Store `lastCompletedActivityLevel` when each activity interval completes. `getCurrentActivityLevel()` returns `Math.max(live, lastCompleted)`.
+  2. Added `powerMonitor.getSystemIdleTime()` fallback — polls every 1s, marks slots active when idle time < 2s.
+  3. Added `is_blurred` to Zod schema. Server now stores it and uses desktop's thumbnail from FormData.
+- **Root Cause:** Activity % calculation was inherently racy with the screenshot capture timing, and had no fallback when the native input hook failed.
+
+---
+
 ## Summary
 
 | Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | Critical | 6     | 6     | 0    |
-| High     | 7     | 7     | 0    |
+| High     | 8     | 8     | 0    |
 | Medium   | 10    | 10    | 0    |
 | Low      | 2     | 1     | 1    |
-| **Total**| **25**| **24**| **1**|
+| **Total**| **26**| **25**| **1**|

@@ -4,6 +4,7 @@ export const uploadScreenshotSchema = z.object({
   time_entry_id: z.string().optional(),
   activity_level: z.number().int().min(0).max(100).default(0),
   captured_at: z.string().datetime().optional(),
+  is_blurred: z.boolean().optional().default(false),
 });
 
 export const listScreenshotsSchema = z.object({

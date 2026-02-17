@@ -175,7 +175,8 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - [x] Fix: Added `remote-debugging-port=9222` for desktop E2E testing via Playwright CDP
 
 ## Known Issues / Blockers
-- 30 total bugs found, **29 fixed**, 1 known cosmetic (see BUGS.md)
+- 26 total bugs found, **25 fixed**, 1 known cosmetic (see BUGS.md)
+- BUG-029: Screenshots showed 0% activity — **FIXED** (lastCompletedActivityLevel + powerMonitor fallback + Zod schema fix)
 - BUG-024: Timesheet edit form shows UTC times instead of local — **KNOWN** (cosmetic, low priority)
 - BUG-025: Timer UI showed "Start" while timer running — **FIXED** (added isRunning sync + timer:started event)
 - BUG-026: Screenshots broken on web dashboard — **FIXED** (nodeFetch for uploads + /uploads route for serving)
@@ -184,6 +185,7 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - Pre-existing lint: `WebkitAppRegion` in Timer.tsx — Electron CSS property not in React CSSProperties type (cosmetic, works at runtime)
 - **After Phase 5:** Run `npx prisma db push` to apply new `AppUsageLog` + `AppClassification` models
 - App tracker uses PowerShell on Windows — macOS support via AppleScript (untested)
+- **Activity tracking fix (BUG-029):** Desktop + server changes — server needs redeployment for Zod schema + thumbnail fix
 - **Full screenshot pipeline verified:** timer start → screenshot capture → sync → web dashboard (10+ screenshots)
 - E2E Testing Round 1: **PASSED** (20/22 tests, 2 skipped)
 - E2E Testing Round 2: **25/27 passed**, 2 skipped (PDF export, screenshot interval wait)

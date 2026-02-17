@@ -851,5 +851,26 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
      - Includes directory traversal protection, proper MIME types, and cache headers
 - Files: `apps/desktop/src/main/net-fetch.ts`, `apps/desktop/src/main/sync.ts`, `apps/web/app/uploads/[...path]/route.ts`
 
+### 2026-02-17 — Session 6c (Activity Tracking Bug Fix)
+
+[2026-02-17] [BUG-029] ✅ FIXED — Screenshots always show 0% activity on web dashboard
+- **Three root causes found and fixed:**
+  1. **Desktop: `getCurrentActivityLevel()` returned partial-interval data for screenshots**
+     - Activity logging resets `activeSlots` every 60s. Screenshots fire every 5-10 min.
+     - When a screenshot captures right after a reset, `activeSlots` is near-empty → 0%.
+     - Fix: Store `lastCompletedActivityLevel` when each activity interval completes.
+     - `getCurrentActivityLevel()` now returns `Math.max(live, lastCompleted)` — never drops to 0 while user is active.
+  2. **Desktop: If uiohook-napi fails to load, activity is silently 0 forever**
+     - The `startActivityTracking()` catch block swallowed the error with no fallback.
+     - Fix: Added `powerMonitor.getSystemIdleTime()` fallback that polls every 1s.
+     - If system idle time < 2s, marks the current second-slot as active.
+     - Not as granular as uiohook (can't distinguish keyboard/mouse) but provides accurate activity %.
+  3. **Server: `is_blurred` field stripped from screenshot metadata by Zod**
+     - `uploadScreenshotSchema` didn't include `is_blurred` — Zod strips unknown keys.
+     - Fix: Added `is_blurred: z.boolean().optional().default(false)` to schema.
+     - Server now stores `is_blurred` in Screenshot record.
+- **Bonus fix:** Screenshot API now uses desktop agent's thumbnail from FormData instead of re-uploading the full image as thumbnail.
+- Files: `apps/desktop/src/main/activity.ts`, `apps/web/lib/validations/screenshots.ts`, `apps/web/app/api/v1/screenshots/route.ts`
+
 ## Reverted Decisions
 - None currently

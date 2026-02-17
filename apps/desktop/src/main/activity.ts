@@ -9,10 +9,15 @@ let mouseMoveCount = 0;
 let activityInterval: ReturnType<typeof setInterval> | null = null;
 let idleCheckInterval: ReturnType<typeof setInterval> | null = null;
 let uiohookInstance: { start: () => void; stop: () => void } | null = null;
+let uiohookFailed = false;
+let idleTimeFallbackInterval: ReturnType<typeof setInterval> | null = null;
 
 // Time-bucket tracking: 1-second slots
 let activeSlots = new Set<number>();
 let intervalStartTime = 0;
+
+// Store last completed interval's activity level for screenshots
+let lastCompletedActivityLevel = 0;
 
 // Idle detection
 let lastInputTime = Date.now();
@@ -30,11 +35,23 @@ function markSlotActive() {
   idleNotified = false;
 }
 
-export function getCurrentActivityLevel(): number {
+export function getLiveActivityLevel(): number {
   const config = getConfig();
   const totalSlots = config.activityInterval;
   if (totalSlots === 0) return 0;
   return Math.min(100, Math.round((activeSlots.size / totalSlots) * 100));
+}
+
+export function getCurrentActivityLevel(): number {
+  // For screenshots: use the last completed interval's level if available,
+  // otherwise fall back to the live (partial interval) level.
+  // This prevents screenshots from showing artificially low activity
+  // when captured right after an interval reset.
+  const live = getLiveActivityLevel();
+  if (lastCompletedActivityLevel > 0 && live === 0) {
+    return lastCompletedActivityLevel;
+  }
+  return Math.max(live, lastCompletedActivityLevel);
 }
 
 export function resetActivityCounts() {
@@ -90,13 +107,19 @@ export async function startActivityTracking() {
     console.log("[ACTIVITY] uiohook-napi tracking started");
   } catch (err) {
     console.error("[ACTIVITY] Failed to start uiohook-napi:", err);
-    console.log("[ACTIVITY] Falling back to no activity tracking");
-    return;
+    uiohookFailed = true;
+    console.log("[ACTIVITY] Falling back to powerMonitor idle-time activity tracking");
+    startIdleTimeFallback();
   }
 }
 
 export function startActivityLogging() {
   if (activityInterval) return;
+
+  if (uiohookFailed && !idleTimeFallbackInterval) {
+    console.warn("[ACTIVITY] uiohook failed previously — restarting powerMonitor fallback");
+    startIdleTimeFallback();
+  }
 
   resetActivityCounts();
 
@@ -110,8 +133,11 @@ export function startActivityLogging() {
       Date.now() - config.activityInterval * 1000
     ).toISOString();
 
-    const activityPercent = getCurrentActivityLevel();
+    const activityPercent = getLiveActivityLevel();
     const totalMouseCount = mouseClickCount + mouseMoveCount;
+
+    // Store completed interval level for screenshot use
+    lastCompletedActivityLevel = activityPercent;
 
     const db = getDb();
     db.run(
@@ -181,9 +207,39 @@ export function stopIdleDetection() {
   idleNotified = false;
 }
 
+function startIdleTimeFallback() {
+  // Fallback: use Electron's powerMonitor.getSystemIdleTime() to estimate activity
+  // when uiohook-napi fails to load (e.g. native module issues in packaged app)
+  if (idleTimeFallbackInterval) return;
+
+  try {
+    const { powerMonitor } = require("electron");
+    idleTimeFallbackInterval = setInterval(() => {
+      const idleTime = powerMonitor.getSystemIdleTime(); // seconds
+      if (idleTime < 2) {
+        // User was active in the last 2 seconds
+        markSlotActive();
+        lastInputTime = Date.now();
+        keyboardCount++; // Approximate — we can't distinguish input types
+      }
+    }, 1000);
+    console.log("[ACTIVITY] powerMonitor idle-time fallback started (1s poll)");
+  } catch (err) {
+    console.error("[ACTIVITY] powerMonitor fallback also failed:", err);
+  }
+}
+
+function stopIdleTimeFallback() {
+  if (idleTimeFallbackInterval) {
+    clearInterval(idleTimeFallbackInterval);
+    idleTimeFallbackInterval = null;
+  }
+}
+
 export function stopActivityTracking() {
   stopActivityLogging();
   stopIdleDetection();
+  stopIdleTimeFallback();
 
   if (uiohookInstance) {
     try {
@@ -194,5 +250,6 @@ export function stopActivityTracking() {
     uiohookInstance = null;
   }
 
+  lastCompletedActivityLevel = 0;
   console.log("[ACTIVITY] Tracking stopped");
 }
