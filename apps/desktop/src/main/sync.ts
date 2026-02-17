@@ -3,7 +3,7 @@ import { ipcMain } from "electron";
 import { getDb, persistDb } from "./store";
 import { getConfig } from "./config";
 import { getAuthHeaders, getStoredSession } from "./auth";
-import { electronFetch } from "./net-fetch";
+import { electronFetch, nodeFetch } from "./net-fetch";
 import { getTimerState } from "./timer";
 import { getMainWindow } from "./index";
 import type { SyncStatus } from "../shared/types";
@@ -224,7 +224,7 @@ async function syncScreenshot(
   console.log(`[SYNC] Uploading screenshot: ${filePath} (${(fileBuffer.length / 1024).toFixed(1)}KB)`);
   console.log(`[SYNC] Metadata:`, JSON.stringify(metadata));
 
-  const response = await electronFetch(`${config.serverUrl}/api/v1/screenshots`, {
+  const response = await nodeFetch(`${config.serverUrl}/api/v1/screenshots`, {
     method: "POST",
     headers,
     body: formData,

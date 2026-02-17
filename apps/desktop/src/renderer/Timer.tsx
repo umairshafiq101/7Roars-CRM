@@ -63,8 +63,13 @@ export default function Timer({ onLogout }: TimerProps) {
   useEffect(() => {
     loadState();
 
-    const unsubTick = window.electronAPI.onTimerTick((newElapsed) => {
+    const unsubTick = window.electronAPI.onTimerTick((newElapsed, running) => {
       setElapsed(newElapsed);
+      if (running !== undefined) setIsRunning(running);
+    });
+
+    const unsubStarted = window.electronAPI.onTimerStarted(() => {
+      setIsRunning(true);
     });
 
     const unsubStopped = window.electronAPI.onTimerStopped(() => {
@@ -106,6 +111,7 @@ export default function Timer({ onLogout }: TimerProps) {
 
     return () => {
       unsubTick();
+      unsubStarted();
       unsubStopped();
       unsubScreenshot();
       unsubIdle();

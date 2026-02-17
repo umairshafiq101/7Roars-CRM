@@ -156,6 +156,11 @@ async function startTimer(data: {
   startAppTracking();
   updateTrayMenu();
 
+  const win = getMainWindow();
+  if (win) {
+    win.webContents.send("timer:started", { entryId, projectId: data.projectId || null, projectName, description: data.description || null });
+  }
+
   return { success: true, entryId };
 }
 
@@ -233,7 +238,7 @@ function startTickLoop() {
 
     const win = getMainWindow();
     if (win) {
-      win.webContents.send("timer:tick", state.elapsed);
+      win.webContents.send("timer:tick", state.elapsed, true);
     }
 
     // D3: Live tray tooltip update every tick

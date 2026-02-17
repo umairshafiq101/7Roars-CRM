@@ -29,11 +29,17 @@ const api = {
   getSyncStatus: () => ipcRenderer.invoke("sync:get-status"),
 
   // Events from main process
-  onTimerTick: (callback: (elapsed: number) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, elapsed: number) =>
-      callback(elapsed);
+  onTimerTick: (callback: (elapsed: number, isRunning: boolean) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, elapsed: number, isRunning: boolean) =>
+      callback(elapsed, isRunning);
     ipcRenderer.on("timer:tick", handler);
     return () => ipcRenderer.removeListener("timer:tick", handler);
+  },
+  onTimerStarted: (callback: (data: { entryId?: string; projectId?: string | null; projectName?: string | null; description?: string | null }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { entryId?: string; projectId?: string | null; projectName?: string | null; description?: string | null }) =>
+      callback(data);
+    ipcRenderer.on("timer:started", handler);
+    return () => ipcRenderer.removeListener("timer:started", handler);
   },
   onTimerStopped: (callback: () => void) => {
     const handler = () => callback();
