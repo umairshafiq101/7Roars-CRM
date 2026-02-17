@@ -808,5 +808,48 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 - Login/signup verified working via Playwright automation
 - Files: `Dockerfile`, `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy.sh`, `apps/web/lib/auth.ts`, `apps/web/proxy.ts`, `apps/desktop/src/main/auth.ts`, `apps/desktop/src/main/config.ts`, `apps/desktop/src/renderer/Login.tsx`
 
+### 2026-02-14 — Session 6a (Desktop Agent Build Fixes)
+
+[2026-02-14] [4.5-desktop-build] ✅ DONE — Fix desktop agent packaging for native modules
+- Root cause: Electron Forge + Vite bundles JS but native modules (sharp, uiohook-napi, sql.js) need to be in node_modules
+- Added `packageAfterCopy` hook in `forge.config.ts` to copy native modules into build's node_modules before ASAR packaging
+- Fixed pnpm symlink resolution: `resolvePackagePath()` dereferences symlinks to real paths in pnpm store
+- Copies sharp + its peer deps (@img/sharp-win32-x64, color, detect-libc, semver) from pnpm store
+- Re-enabled ASAR packaging (was disabled as workaround)
+- Files: `apps/desktop/forge.config.ts`
+
+[2026-02-14] [4.5-desktop-fetch] ✅ DONE — Fix "fetch failed" in packaged desktop agent
+- Root cause: Electron's packaged app uses Chromium's network stack; Node.js global `fetch` doesn't work properly
+- Created `net-fetch.ts` wrapper using Electron's `net.fetch()` (Chromium network stack)
+- Replaced all `fetch()` calls across 5 files with `electronFetch()`
+- Files: `apps/desktop/src/main/net-fetch.ts`, `auth.ts`, `config.ts`, `projects.ts`, `sync.ts`, `timer.ts`
+
+[2026-02-14] [4.5-desktop-shortcuts] ✅ DONE — Add Squirrel shortcut handling
+- Added Squirrel event handling in main process for Windows installer
+- Creates Start Menu shortcuts on install, removes on uninstall
+- App now appears in Windows Search after installation
+- Files: `apps/desktop/src/main/index.ts`
+
+### 2026-02-17 — Session 6b (Desktop Agent Bug Fixes)
+
+[2026-02-17] [BUG-025] ✅ DONE — Fix timer UI showing "Start" while timer is running
+- Root cause: `timer:tick` event only sent `elapsed` number, never `isRunning` state
+- No `timer:started` event existed, so renderer could lose sync with main process
+- Fix: Send `isRunning=true` as second arg with every `timer:tick` event
+- Fix: Added `timer:started` IPC event emitted when timer starts (including from tray)
+- Updated preload to expose `onTimerStarted` + updated `onTimerTick` signature
+- Updated `Timer.tsx` to listen for both events and keep `isRunning` in sync
+- Files: `apps/desktop/src/main/timer.ts`, `apps/desktop/src/preload/preload.ts`, `apps/desktop/src/renderer/Timer.tsx`
+
+[2026-02-17] [BUG-026] ✅ DONE — Fix broken screenshot images on web dashboard
+- Two root causes found and fixed:
+  1. Desktop: Electron's `net.fetch` (Chromium) corrupts binary data in FormData with Node.js Blob objects
+     - Fix: Added `nodeFetch()` wrapper using `globalThis.fetch` (Node.js native) for file uploads
+     - Screenshot upload now uses `nodeFetch` instead of `electronFetch`
+  2. Server: Next.js standalone mode doesn't serve static files from `public/` directory
+     - Fix: Created `/uploads/[...path]/route.ts` API route to serve uploaded files
+     - Includes directory traversal protection, proper MIME types, and cache headers
+- Files: `apps/desktop/src/main/net-fetch.ts`, `apps/desktop/src/main/sync.ts`, `apps/web/app/uploads/[...path]/route.ts`
+
 ## Reverted Decisions
 - None currently

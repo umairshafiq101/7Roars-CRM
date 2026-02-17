@@ -175,8 +175,10 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - [x] Fix: Added `remote-debugging-port=9222` for desktop E2E testing via Playwright CDP
 
 ## Known Issues / Blockers
-- 28 total bugs found, **27 fixed**, 1 known cosmetic (see BUGS.md)
+- 30 total bugs found, **29 fixed**, 1 known cosmetic (see BUGS.md)
 - BUG-024: Timesheet edit form shows UTC times instead of local — **KNOWN** (cosmetic, low priority)
+- BUG-025: Timer UI showed "Start" while timer running — **FIXED** (added isRunning sync + timer:started event)
+- BUG-026: Screenshots broken on web dashboard — **FIXED** (nodeFetch for uploads + /uploads route for serving)
 - Socket.io server not yet integrated into Next.js dev server — mitigated by REST heartbeat polling
 - Rate limiting not yet implemented on API endpoints
 - Pre-existing lint: `WebkitAppRegion` in Timer.tsx — Electron CSS property not in React CSSProperties type (cosmetic, works at runtime)
