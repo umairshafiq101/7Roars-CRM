@@ -1281,5 +1281,28 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 - **Files:** `apps/desktop/src/main/activity.ts`
 - **Note:** This is a desktop-only fix. Since the desktop runs in dev mode via Vite HMR, the fix is live immediately without a rebuild. Restart the desktop agent to apply.
 
+### 2026-02-20 — Session 20 (Desktop Auto-Update System)
+
+[2026-02-20] [FEAT] ✅ Desktop agent auto-update via self-hosted Squirrel update server
+- **Feature:** Team members' desktop agents now check for updates automatically on startup and every 4 hours. When an update is downloaded, a Windows balloon notification appears and a "🔄 Restart to Update" item is added to the tray menu. User clicks it to install — no manual uninstall/reinstall needed.
+- **Architecture:**
+  - `apps/desktop/src/main/updater.ts` (new) — `autoUpdater.setFeedURL()` pointing to `https://os.7roars.com/updates/`, checks on startup (15s delay) + every 4h, fires `onUpdateReady` callback on download complete
+  - `apps/desktop/src/main/tray.ts` — imports `isUpdateReady()` + `installUpdate()`, conditionally renders "🔄 Restart to Update" menu item
+  - `apps/desktop/src/main/index.ts` — calls `startAutoUpdater()` in production only (skipped when `MAIN_WINDOW_VITE_DEV_SERVER_URL` is set), shows balloon notification via `onUpdateReady` callback
+  - `Caddyfile` — added `route /updates/*` block with `uri strip_prefix` + `file_server` serving from `/srv/updates`
+  - `docker-compose.prod.yml` — added bind mount `/opt/7roars/updates:/srv/updates:ro` into Caddy container
+- **Update server:** `https://os.7roars.com/updates/RELEASES` returns 200 ✅
+- **Current artifacts on server:** `7RoarsAgent-1.0.1-full.nupkg` + `RELEASES` in `/opt/7roars/updates/`
+- **Version bumped:** `1.0.0` → `1.0.1`
+
+**Release workflow (for future updates):**
+```
+1. Bump version in apps/desktop/package.json
+2. pnpm --filter @7roars/desktop make
+3. scp out/make/squirrel.windows/x64/RELEASES root@187.77.27.176:/opt/7roars/updates/RELEASES
+4. scp out/make/squirrel.windows/x64/7RoarsAgent-X.Y.Z-full.nupkg root@187.77.27.176:/opt/7roars/updates/
+5. All agents pick up the update within 4 hours automatically
+```
+
 ## Reverted Decisions
 - None currently
