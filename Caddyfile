@@ -3,7 +3,9 @@
 
 os.7roars.com {
 	# Serve desktop agent update files (Squirrel auto-update)
-	handle_path /updates/* {
+	@updates path /updates/*
+	handle @updates {
+		uri strip_prefix /updates
 		root * /srv/updates
 		file_server
 	}
