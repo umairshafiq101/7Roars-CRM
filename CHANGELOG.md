@@ -1258,5 +1258,21 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 
 **Verification:** TypeScript check (`tsc --noEmit`) — 0 errors.
 
+### 2026-02-20 — Session 19 (Bug Fixes: Desktop↔Web Data Linking)
+
+[2026-02-20] [BUG-030] ✅ FIXED — Desktop timer start fails silently (Zod rejects null end_time)
+- **Symptom:** Desktop agent shows running timer but Overview=0, Timesheet=empty, Activities=empty
+- **Root cause:** `createTimeEntrySchema.end_time` was `z.string().datetime().optional()` — accepts `undefined` but NOT `null`. Desktop agent sends `end_time: null` when starting timer → Zod validation fails → 422 response → no TimeEntry created in DB
+- **Fix:** Added `.nullable()` to `end_time` and `duration` in both `createTimeEntrySchema` and `updateTimeEntrySchema`
+- **Files:** `apps/web/lib/validations/time-entries.ts`
+
+[2026-02-20] [BUG-031] ✅ FIXED — Prisma P2022 "column does not exist" on TimeEntry queries
+- **Symptom:** Projects page shows "No projects" despite 3 projects in DB; various server actions crash
+- **Root cause:** Phase 10 added `manual_status` column + `ManualEntryStatus` enum to Prisma schema but `prisma db push` was never run on production server. Any Prisma query touching TimeEntry model failed with P2022.
+- **Fix:** Rebuilt migrate container with latest code, ran `docker compose --profile migrate run --rm migrate` → added `manual_status` column, `ManualEntryStatus` enum, `ProjectMember`, `TaskAssignee`, `TaskComment`, `TaskAttachment` tables
+- **Server ops:** git pull → rebuild migrate image → db push → rebuild web image → restart web container
+
+**Verification:** Clean docker logs (0 errors), all API endpoints responding correctly.
+
 ## Reverted Decisions
 - None currently
