@@ -15,6 +15,47 @@ model Task {
 
   project         Project      @relation(fields: [project_id], references: [id])
   time_entries    TimeEntry[]
+  assignees       TaskAssignee[]
+  comments        TaskComment[]
+  attachments     TaskAttachment[]
+}
+
+model TaskAssignee {
+  id         String   @id @default(cuid())
+  task_id    String
+  user_id    String
+  created_at DateTime @default(now())
+
+  task       Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([task_id, user_id])
+}
+
+model TaskComment {
+  id         String   @id @default(cuid())
+  task_id    String
+  user_id    String
+  content    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  task       Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  task_id      String
+  user_id      String
+  file_name    String
+  file_url     String
+  file_size    Int?
+  content_type String?
+  created_at   DateTime @default(now())
+
+  task         Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 enum TaskStatus {

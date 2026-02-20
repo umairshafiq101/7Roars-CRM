@@ -158,6 +158,49 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
   - [x] 5.E3-E4 App classifications API (GET/PUT /api/v1/app-classifications)
   - [ ] 5.E2 Dashboard enhancements (productivity widget) ← OPTIONAL NEXT
   - [x] 5.E2E Phase 5 E2E Testing ✅ COMPLETE (37/52 passed, 0 failed, 14 skipped)
+- [x] Phase 6: UI Branding + Sidebar Overhaul ✅ COMPLETE
+  - [x] 6.1 Branded color palette (purple #5B4FE9, orange #F5A623, navy #1E1B4B from 7Roars logo)
+  - [x] 6.2 Module registry with group field + 14 new modules across 7 groups
+  - [x] 6.3 Grouped navigation system (NavGroup, getGroupedNavItems)
+  - [x] 6.4 Light-mode sidebar with collapsible sections, SVG logo, 23 icons
+  - [x] 6.5 Topbar redesign (light theme, search placeholder, gradient avatar)
+  - [x] 6.6 ComingSoon shared component (gradient icon, orange badge)
+  - [x] 6.7 14 Coming Soon placeholder pages
+  - [x] 6.8 Auth pages rebranded (logo, gradient background, modern cards)
+- [x] Phase 7: Overview Dashboard Redesign ✅ COMPLETE
+  - [x] 7.1 New server action: getOverviewData() with 6 parallel queries + heartbeat
+  - [x] 7.2 DonutChart.tsx SVG component (pure SVG, no charting library)
+  - [x] 7.3 StatusCards.tsx (6 colored employee status cards)
+  - [x] 7.4 ClockInOutTable.tsx (team clock-in/out + activity bars)
+  - [x] 7.5 RecentApps.tsx (top 8 apps with category colors)
+  - [x] 7.6 AppCategoryChart.tsx (donut + table by AI classification)
+  - [x] 7.7 WebsiteCategoryChart.tsx (donut + table by domain)
+  - [x] 7.8 RecentScreenshots.tsx (horizontal scrollable gallery)
+  - [x] 7.9 AlertConditions.tsx (3 expandable alert rows)
+  - [x] 7.10 Dashboard page.tsx rewrite (Worktivity-style overview)
+- [x] Phase 8: Team Page Redesign ✅ COMPLETE
+  - [x] 8.1 Enhanced getTeamMembers() with status derivation + new getTeamMemberDetail() action
+  - [x] 8.2 TeamStatusFilter.tsx (6 colored filter pills with counts)
+  - [x] 8.3 TeamCard.tsx (Worktivity-style member card with status border + activity %)
+  - [x] 8.4 TeamMemberDrawer.tsx (slide-in panel: Stats/Activities/Screenshots tabs, date range picker, productivity donuts)
+  - [x] 8.5 Team page.tsx rewrite (filter tabs + card grid + drawer integration)
+- [x] Phase 9: Customers, Projects Redesign, Tasks Pages ✅ COMPLETE
+- [x] Phase 10: Tracking Pages Full Implementation ✅ COMPLETE
+  - [x] 10.1 ManualEntryStatus enum + manual_status field on TimeEntry (db push)
+  - [x] 10.2 actions/manual-entries.ts (getManualEntries, create, update, approve, reject, delete)
+  - [x] 10.3 actions/my-activities.ts (getMyActivitySummary, getMyProjects)
+  - [x] 10.4 getTimesheetSummary() added to actions/time-entries.ts
+  - [x] 10.5 getTimelapseSessions() added to actions/screenshots.ts
+  - [x] 10.6 ActivityBar.tsx + ActivitySummaryCards.tsx components
+  - [x] 10.7 TimelapseGrid.tsx + TimelapsePlayer.tsx components
+  - [x] 10.8 ManualEntriesTable.tsx + ManualEntryModal.tsx components
+  - [x] 10.9 Timesheet page redesign (grouped by employee, expandable rows, export CSV)
+  - [x] 10.10 My Activities page (activity bar, stat cards, donut charts, activity history)
+  - [x] 10.11 Timelapse Videos page (screenshot-based grid + cycling player modal)
+  - [x] 10.12 Manual Time Entries page (CRUD table, approve/reject, add/edit modal)
+- [x] Phase 11: Review Apps Redesign ✅ COMPLETE
+  - [x] 11.1 getReviewAppsData() action — per-entry rows grouped by app+URL, tab/search/pagination support
+  - [x] 11.2 /app-usage page full redesign — Worktivity-style with tabs, table, 3-button classify workflow
 
 ### Phase 3 Bug Fixes (Session 3b)
 - [x] Fix: package.json `main` → `.vite/build/index.js` (not `main.js`)
@@ -176,19 +219,35 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 
 ## Known Issues / Blockers
 - 26 total bugs found, **25 fixed**, 1 known cosmetic (see BUGS.md)
-- BUG-029: Screenshots showed 0% activity — **FIXED** (lastCompletedActivityLevel + powerMonitor fallback + Zod schema fix)
-- BUG-024: Timesheet edit form shows UTC times instead of local — **KNOWN** (cosmetic, low priority)
-- BUG-025: Timer UI showed "Start" while timer running — **FIXED** (added isRunning sync + timer:started event)
-- BUG-026: Screenshots broken on web dashboard — **FIXED** (nodeFetch for uploads + /uploads route for serving)
+- **Only open bug:** BUG-024 — Timesheet edit form shows UTC times instead of local (cosmetic, low priority)
+
+### Recently Fixed (Session 6c — 2026-02-17)
+- BUG-029: Screenshots showed 0% activity — **FIXED + DEPLOYED** (desktop rebuild + server redeployed)
+  - Desktop: `lastCompletedActivityLevel` + `powerMonitor.getSystemIdleTime()` fallback
+  - Server: `is_blurred` added to Zod schema + thumbnail from FormData
+  - Verified working: activity logs show 53-60% during active use
+- BUG-025: Timer UI showed "Start" while timer running — **FIXED**
+- BUG-026: Screenshots broken on web dashboard — **FIXED**
+
+### Remaining Technical Debt
 - Socket.io server not yet integrated into Next.js dev server — mitigated by REST heartbeat polling
 - Rate limiting not yet implemented on API endpoints
-- Pre-existing lint: `WebkitAppRegion` in Timer.tsx — Electron CSS property not in React CSSProperties type (cosmetic, works at runtime)
-- **After Phase 5:** Run `npx prisma db push` to apply new `AppUsageLog` + `AppClassification` models
+- Pre-existing lint: `WebkitAppRegion` in Timer.tsx — cosmetic, works at runtime
 - App tracker uses PowerShell on Windows — macOS support via AppleScript (untested)
-- **Activity tracking fix (BUG-029):** Desktop + server changes — server needs redeployment for Zod schema + thumbnail fix
-- **Full screenshot pipeline verified:** timer start → screenshot capture → sync → web dashboard (10+ screenshots)
-- E2E Testing Round 1: **PASSED** (20/22 tests, 2 skipped)
-- E2E Testing Round 2: **25/27 passed**, 2 skipped (PDF export, screenshot interval wait)
+- Sharp fails to load in packaged Electron app — falls back to PNG (larger file size, screenshots still work)
+
+### Verified Working
+- **Full screenshot pipeline:** timer start → screenshot capture → activity % attached → sync → web dashboard
+- **Activity tracking:** uiohook-napi primary + powerMonitor fallback, 53-60% during active use
+- **Production deployment:** `https://os.7roars.com` — Docker Compose (web + db + caddy + redis)
+- **Dashboard UI:** Light-mode branded theme (7Roars purple/orange), grouped sidebar with 7 sections, 25+ nav items, collapsible groups
+- **Overview page:** Worktivity-style dashboard with 6 status cards, clock-in/out table, recent apps, app/website category charts (SVG donut), screenshot gallery, alert conditions — all backed by real database queries
+- **Team page:** Worktivity-style team view with status filter tabs (All/Working/On break/Idle/Stopped work/Yet to start), redesigned member cards with status-colored borders and activity %, slide-in member detail drawer with Stats/Activities/Screenshots tabs, date range picker, productivity donut charts — fully integrated with database
+- **Customers page:** Worktivity-style customer management with table (Company/Name/Website), search, add/edit modal (all fields), row actions (create invoice, edit, delete) — backed by Client model with CRUD actions
+- **Projects page:** Worktivity-style project management with expandable rows (time spent, budget, cost, billable), customer dropdown, employee assignment via ProjectMember, color picker — backed by enhanced getProjects() with time/cost aggregations
+- **Tasks page:** Worktivity-style task management with filter bar (7 filters + assigned-to-me), paginated table, quick create modal, slide-in detail drawer (form, assignees, description, attachments with upload, comments) — backed by getTasks() with pagination + full CRUD
+- **Auth pages:** Branded login/register with 7Roars logo and gradient background
+- E2E Testing: 25/27 passed, 2 skipped (PDF export, screenshot interval wait)
 - All edge cases passed: empty forms, XSS, SQL injection, large upload, duplicate registration
 - Desktop agent E2E: login, start/stop timer, project switch, screenshot pipeline all working
 - See `LOCAL-SETUP-GUIDE.md` for running both apps locally
@@ -206,6 +265,98 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - `apps/web/actions/app-usage.ts` — App usage server actions
 - `apps/web/actions/productivity.ts` — Productivity server actions
 - `apps/web/lib/validations/app-usage.ts` — Zod schemas for app usage
+
+## New Files Added in Phase 6
+### Web Application (UI Branding + Sidebar Overhaul)
+- `apps/web/components/shared/ComingSoon.tsx` — Shared Coming Soon placeholder component
+- `apps/web/app/(dashboard)/my-activities/page.tsx` — My Activities (Coming Soon)
+- `apps/web/app/(dashboard)/timelapse/page.tsx` — Timelapse Videos (Coming Soon)
+- `apps/web/app/(dashboard)/manual-entries/page.tsx` — Manual Time Entries (Coming Soon)
+- `apps/web/app/(dashboard)/tasks/page.tsx` — Tasks (Coming Soon)
+- `apps/web/app/(dashboard)/clients/page.tsx` — Customers (Coming Soon)
+- `apps/web/app/(dashboard)/leave-requests/page.tsx` — Leave Requests (Coming Soon)
+- `apps/web/app/(dashboard)/leave-rights/page.tsx` — Leave Rights (Coming Soon)
+- `apps/web/app/(dashboard)/work-times/page.tsx` — Work Times (Coming Soon)
+- `apps/web/app/(dashboard)/task-insights/page.tsx` — Task Insights (Coming Soon)
+- `apps/web/app/(dashboard)/apps-summary/page.tsx` — Apps Summary (Coming Soon)
+- `apps/web/app/(dashboard)/advanced-insights/page.tsx` — Advanced Insights (Coming Soon)
+- `apps/web/app/(dashboard)/productivity-coach/page.tsx` — Productivity Coach (Coming Soon)
+- `apps/web/app/(dashboard)/invoices/page.tsx` — Invoices (Coming Soon)
+- `apps/web/app/(dashboard)/payroll/page.tsx` — Payroll Calculator (Coming Soon)
+
+## New Files Added in Phase 7
+### Web Application (Overview Dashboard Redesign)
+- `apps/web/actions/overview.ts` — getOverviewData() server action with parallel queries
+- `apps/web/components/modules/overview/DonutChart.tsx` — Pure SVG donut chart component
+- `apps/web/components/modules/overview/StatusCards.tsx` — 6 colored employee status cards
+- `apps/web/components/modules/overview/ClockInOutTable.tsx` — Team clock-in/out table
+- `apps/web/components/modules/overview/RecentApps.tsx` — Top 8 recently used apps
+- `apps/web/components/modules/overview/AppCategoryChart.tsx` — Apps by AI categorization (donut + table)
+- `apps/web/components/modules/overview/WebsiteCategoryChart.tsx` — Websites by domain (donut + table)
+- `apps/web/components/modules/overview/RecentScreenshots.tsx` — Horizontal screenshot gallery
+- `apps/web/components/modules/overview/AlertConditions.tsx` — Expandable alert condition rows
+
+## New Files Added in Phase 10
+### Web Application (Tracking Pages Full Implementation)
+- `apps/web/actions/manual-entries.ts` — Manual entry CRUD + approve/reject server actions
+- `apps/web/actions/my-activities.ts` — Activity summary + projects server actions
+- `apps/web/components/modules/activities/ActivityBar.tsx` — 24h timeline bar visualization
+- `apps/web/components/modules/activities/ActivitySummaryCards.tsx` — Working/activity/break/idle stat cards
+- `apps/web/components/modules/timelapse/TimelapseGrid.tsx` — 4-column screenshot session grid
+- `apps/web/components/modules/timelapse/TimelapsePlayer.tsx` — Cycling screenshot player modal
+- `apps/web/components/modules/manual-entries/ManualEntriesTable.tsx` — CRUD table with status badges
+- `apps/web/components/modules/manual-entries/ManualEntryModal.tsx` — Add/edit form modal
+
+### Files Modified in Phase 10
+- `apps/web/prisma/modules/time-tracking.prisma` — Added ManualEntryStatus enum + manual_status field
+- `apps/web/actions/time-entries.ts` — Added getTimesheetSummary() action
+- `apps/web/actions/screenshots.ts` — Added getTimelapseSessions() action
+- `apps/web/app/(dashboard)/timesheets/page.tsx` — Full redesign: grouped-by-employee, expandable rows, export
+- `apps/web/app/(dashboard)/my-activities/page.tsx` — Full implementation from Coming Soon
+- `apps/web/app/(dashboard)/timelapse/page.tsx` — Full implementation from Coming Soon
+- `apps/web/app/(dashboard)/manual-entries/page.tsx` — Full implementation from Coming Soon
+
+## New Files Added in Phase 9
+### Web Application (Customers, Projects Redesign, Tasks)
+- `apps/web/actions/clients.ts` — Client CRUD server actions with search
+- `apps/web/actions/tasks.ts` — Task CRUD + comments, assignees, attachments server actions
+- `apps/web/app/api/v1/task-attachments/route.ts` — File upload API for task attachments
+- `apps/web/components/modules/tasks/TaskDetailDrawer.tsx` — Slide-in task detail panel
+
+### Schema Files Modified in Phase 9 (additive only)
+- `apps/web/prisma/modules/clients.prisma` — Added surname, website, tax_office, tax_number
+- `apps/web/prisma/modules/time-tracking.prisma` — Added ProjectMember model + Project.members relation
+- `apps/web/prisma/modules/tasks.prisma` — Added TaskAssignee, TaskComment, TaskAttachment models
+- `apps/web/prisma/modules/core.prisma` — Added reverse relations on User and Member
+
+### Files Modified in Phase 9
+- `apps/web/actions/projects.ts` — Enhanced with client/member/time queries, addProjectMember, removeProjectMember, getOrgMembers
+- `apps/web/app/(dashboard)/clients/page.tsx` — Full rewrite from Coming Soon to Worktivity-style customer management
+- `apps/web/app/(dashboard)/projects/page.tsx` — Full redesign with expandable rows, customer/member management
+- `apps/web/app/(dashboard)/tasks/page.tsx` — Full rewrite from Coming Soon to Worktivity-style task management
+
+## New Files Added in Phase 8
+### Web Application (Team Page Redesign)
+- `apps/web/components/modules/team/TeamStatusFilter.tsx` — Status filter pill buttons with counts
+- `apps/web/components/modules/team/TeamCard.tsx` — Worktivity-style member card with status border
+- `apps/web/components/modules/team/TeamMemberDrawer.tsx` — Slide-in detail panel (Stats/Activities/Screenshots)
+
+### Files Modified in Phase 8
+- `apps/web/actions/team.ts` — Enhanced getTeamMembers() + new getTeamMemberDetail() action
+- `apps/web/app/(dashboard)/team/page.tsx` — Complete rewrite with filter tabs, card grid, drawer
+
+### Files Modified in Phase 7
+- `apps/web/app/(dashboard)/dashboard/page.tsx` — Complete rewrite with Worktivity-style overview layout
+
+### Files Modified in Phase 6
+- `apps/web/app/globals.css` — Branded color palette, removed dark mode
+- `apps/web/config/modules.ts` — Group field + 14 new modules
+- `apps/web/config/navigation.ts` — Grouped navigation system
+- `apps/web/components/layout/Sidebar.tsx` — Light-mode grouped sidebar rewrite
+- `apps/web/components/layout/Topbar.tsx` — Light theme redesign
+- `apps/web/app/(auth)/layout.tsx` — Logo + gradient branding
+- `apps/web/app/(auth)/login/page.tsx` — Branded login page
+- `apps/web/app/(auth)/register/page.tsx` — Branded register page
 
 ## Default Login
 - Register a new account via the web app at http://localhost:3000

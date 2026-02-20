@@ -872,5 +872,391 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 - **Bonus fix:** Screenshot API now uses desktop agent's thumbnail from FormData instead of re-uploading the full image as thumbnail.
 - Files: `apps/desktop/src/main/activity.ts`, `apps/web/lib/validations/screenshots.ts`, `apps/web/app/api/v1/screenshots/route.ts`
 
+### 2026-02-17 — Session 13 (Phase 6: UI Branding + Sidebar Overhaul)
+
+[2026-02-17] [6.1] ✅ DONE — Branded color palette in globals.css
+- Replaced generic indigo (#6366f1) with 7Roars brand colors extracted from logo
+- Primary purple: #5B4FE9, Accent orange: #F5A623, Dark navy: #1E1B4B
+- Added light-mode sidebar variables (--sidebar-bg, --sidebar-hover, --sidebar-active-bg, --sidebar-group-text, etc.)
+- Removed `@media (prefers-color-scheme: dark)` block — app is now light-mode only
+- Added custom scrollbar styles for sidebar
+- Files: `apps/web/app/globals.css`
+
+[2026-02-17] [6.2] ✅ DONE — Module registry with group field + 14 new modules
+- Extended `Module` interface with `group: ModuleGroupId` and optional `badge` field
+- Created `ModuleGroup` type with `id`, `label`, `order`
+- Defined 7 groups: Dashboard, Tracking, Task Tracking, Leave Management, Insights, Cost Management, System
+- Added 14 new module entries (all `enabled: true`): my-activities, timelapse, manual-entries, tasks, clients, leave-requests, leave-rights, work-times, task-insights, apps-summary, advanced-insights, productivity-coach, invoices, payroll
+- Renamed existing modules for sidebar consistency: "Dashboard" → "Overview", "App Usage" → "Review Apps", "Clients" → "Customers", "Timesheets" → "Timesheet"
+- All existing modules assigned to appropriate groups, previously disabled modules (tasks, clients, invoices) now enabled
+- Files: `apps/web/config/modules.ts`
+
+[2026-02-17] [6.3] ✅ DONE — Grouped navigation system
+- Added `NavGroup` interface and `getGroupedNavItems()` function
+- Returns modules organized by group with label, order, and items array
+- Preserved existing `getNavItems()` for backward compatibility
+- Files: `apps/web/config/navigation.ts`
+
+[2026-02-17] [6.4] ✅ DONE — Sidebar complete rewrite (light mode, grouped sections)
+- Switched from dark background (#111827) to white/light background
+- Added 7Roars SVG logo in header (paper airplane with orange accent)
+- Collapsible section groups with chevron toggle icons
+- Purple left-border + light purple background for active items
+- Badge support (e.g., "BETA" on Leave Requests in orange)
+- 23 lucide-react icons in iconMap (added Activity, Video, PenLine, AppWindow, CalendarCheck, Shield, Timer, TrendingUp, BarChart2, LayoutGrid, Sparkles, Brain, Calculator)
+- Mobile responsiveness preserved (slide-in overlay, backdrop blur)
+- Custom scrollbar via `.sidebar-scroll` class
+- Files: `apps/web/components/layout/Sidebar.tsx`
+
+[2026-02-17] [6.5] ✅ DONE — Topbar redesign
+- Light white background with clean border
+- Added search bar placeholder (non-functional, visual only)
+- Gradient avatar (purple to violet) instead of flat primary color
+- Orange notification dot on bell icon
+- Divider between notifications and user profile
+- Improved sign-out button hover (red tint)
+- Files: `apps/web/components/layout/Topbar.tsx`
+
+[2026-02-17] [6.6] ✅ DONE — ComingSoon shared component
+- Accepts `title`, `description`, and `icon` (LucideIcon) props
+- Gradient purple icon container with shadow
+- Orange "Coming Soon" pill badge with rocket icon
+- Decorative branded dots (purple + orange + light purple)
+- Files: `apps/web/components/shared/ComingSoon.tsx`
+
+[2026-02-17] [6.7] ✅ DONE — 14 Coming Soon placeholder pages
+- All pages use shared ComingSoon component with unique titles, descriptions, and icons
+- Pages created: my-activities, timelapse, manual-entries, tasks, clients, leave-requests, leave-rights, work-times, task-insights, apps-summary, advanced-insights, productivity-coach, invoices, payroll
+- Files: `apps/web/app/(dashboard)/*/page.tsx` (14 new files)
+
+[2026-02-17] [6.8] ✅ DONE — Auth pages rebranded
+- Auth layout: 7Roars SVG logo, gradient background (light gray → white → light purple), branded "7Roars Agency OS" heading
+- Login page: rounded-xl card, "Welcome back" heading, branded focus rings, hover state on button (#4F43D9)
+- Register page: same branded treatment, "Get started with 7Roars Agency OS" subtitle
+- Files: `apps/web/app/(auth)/layout.tsx`, `apps/web/app/(auth)/login/page.tsx`, `apps/web/app/(auth)/register/page.tsx`
+
+**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors. Lint check — 0 warnings. Dev server compiles and serves all pages.
+
+### 2026-02-18 — Session 14 (Phase 7: Overview Dashboard Redesign)
+
+[2026-02-18] [7.1] ✅ DONE — New server action: actions/overview.ts
+- Created `getOverviewData()` function with 6 parallel database queries + heartbeat check via `Promise.all`
+- Queries: active members, today's time entries, screenshots (latest 10), app usage logs, activity logs, app classifications
+- Derives all 7 dashboard sections: statusCards, clockInOut, recentApps, appsByCategory, websitesByDomain, screenshots, alerts
+- Role-based access: EMPLOYEE sees own data, OWNER/ADMIN/MANAGER see all org data
+- Imports `getHeartbeatOnlineUsers()` directly from heartbeat route for server-side online status
+- Date serialization follows `.toISOString()` pattern per BUG-023 fix
+- Files: `apps/web/actions/overview.ts`
+
+[2026-02-18] [7.2] ✅ DONE — DonutChart.tsx SVG component
+- Pure SVG donut chart using `stroke-dasharray`/`stroke-dashoffset` for each segment
+- Props: `data: { label, value, color }[]`, `size`, `strokeWidth`
+- No external charting library — lightweight, branded
+- Empty state renders a gray circle
+- Files: `apps/web/components/modules/overview/DonutChart.tsx`
+
+[2026-02-18] [7.3] ✅ DONE — StatusCards.tsx (6 colored employee status cards)
+- Six stat cards: Employees, Working, On break, Idle, Stopped work, Yet to start
+- Each card has unique color scheme, icon, and background tint
+- Icons: Users, Play, Coffee, Moon, Square, Clock (lucide-react)
+- Responsive grid: 2 cols on mobile, 3 on tablet, 6 on desktop
+- Files: `apps/web/components/modules/overview/StatusCards.tsx`
+
+[2026-02-18] [7.4] ✅ DONE — ClockInOutTable.tsx
+- Shows team members with clock-in (first entry start_time), clock-out (last entry end_time or "Working")
+- User avatar with gradient initials fallback
+- Activity progress bar per user (colored by avg activity %)
+- "See all" link to /team page
+- Files: `apps/web/components/modules/overview/ClockInOutTable.tsx`
+
+[2026-02-18] [7.5] ✅ DONE — RecentApps.tsx
+- Top 8 most-used apps today with user count, total duration, and category-colored icon
+- Category colors: PRODUCTIVE (#5B4FE9), UNPRODUCTIVE (#EF4444), NEUTRAL (#F5A623), UNCLASSIFIED (#94A3B8)
+- "See all" link to /apps-summary page
+- Files: `apps/web/components/modules/overview/RecentApps.tsx`
+
+[2026-02-18] [7.6] ✅ DONE — AppCategoryChart.tsx
+- Donut chart + bar table showing app usage by AI classification category
+- Categories: Productive, Unproductive, Neutral, Unclassified
+- Each row shows colored dot, label, progress bar, percentage, and duration
+- Center text shows total duration
+- "Today" badge in header
+- Files: `apps/web/components/modules/overview/AppCategoryChart.tsx`
+
+[2026-02-18] [7.7] ✅ DONE — WebsiteCategoryChart.tsx
+- Donut chart + bar table showing website usage grouped by domain
+- Top 10 domains by duration, each assigned a color from a 10-color palette
+- Same layout pattern as AppCategoryChart for visual consistency
+- Files: `apps/web/components/modules/overview/WebsiteCategoryChart.tsx`
+
+[2026-02-18] [7.8] ✅ DONE — RecentScreenshots.tsx
+- Horizontal scrollable gallery of latest 8 screenshots
+- Each thumbnail shows activity level badge, user name, and relative timestamp
+- Empty state with ImageOff icon
+- "See all" link to /screenshots page
+- Files: `apps/web/components/modules/overview/RecentScreenshots.tsx`
+
+[2026-02-18] [7.9] ✅ DONE — AlertConditions.tsx
+- Three expandable alert rows: "Idle than usual", "Too many breaks", "Unproductive hours"
+- Each shows count badge (colored when > 0, gray when 0) and chevron toggle
+- Expanded state shows member name badges in colored pills
+- Alert logic: idle = avg activity < 30%, breaks = 3+ entries, unproductive = > 50% unproductive app time
+- Files: `apps/web/components/modules/overview/AlertConditions.tsx`
+
+[2026-02-18] [7.10] ✅ DONE — Dashboard page.tsx rewrite
+- Replaced old dashboard (4 stat cards + weekly chart + recent activity) with full Worktivity-style overview
+- Layout: 6 status cards → 2-column (clock-in/out + recent apps) → 2-column (app chart + website chart) → screenshots → alerts
+- Calls `getOverviewData()` on mount, renders all 7 sections
+- Loading spinner while data fetches
+- Existing `getDashboardStats()` in actions/reports.ts NOT modified (other pages may use it)
+- Files: `apps/web/app/(dashboard)/dashboard/page.tsx`
+
+**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors. Lint check — 0 warnings.
+
+### 2026-02-18 — Session 15 (Phase 8: Team Page Redesign with Member Detail Drawer)
+
+[2026-02-18] [8.1] ✅ DONE — Enhanced getTeamMembers() + new getTeamMemberDetail() server action
+- Enhanced `getTeamMembers()` with parallel queries for time entries, activity logs, and heartbeat online status
+- Each member now enriched with `status` (working/on_break/idle/stopped_work/yet_to_start), `avgActivity`, and `todayStats`
+- Exported `MemberStatus` type and `deriveMemberStatus()` helper function
+- New `getTeamMemberDetail(userId, startDate, endDate)` fetches time entries, activity logs, app usage, screenshots in parallel
+- Returns working/idle/break seconds, productive/neutral/unproductive breakdown, serialized entries and screenshots
+- Role-based access: EMPLOYEE sees only own data, managers see all
+- Existing `addMember()`, `updateMemberRole()`, `deactivateMember()` untouched
+- Files: `apps/web/actions/team.ts`
+
+[2026-02-18] [8.2] ✅ DONE — TeamStatusFilter.tsx
+- 6 colored filter pill buttons: All, Working, On break, Idle, Stopped work, Yet to start
+- Each shows a colored icon (lucide-react) and count badge
+- Active filter highlighted with colored background and border
+- Refresh button (RefreshCw icon) on the right
+- Files: `apps/web/components/modules/team/TeamStatusFilter.tsx`
+
+[2026-02-18] [8.3] ✅ DONE — TeamCard.tsx (Worktivity-style member card)
+- Colored left border based on member status
+- Purple gradient avatar fallback with initials
+- Online status dot (green/red), activity % badge in top-right
+- Status text ("Not started yet.", "Working", etc.) and colored status badge pill
+- Click opens the detail drawer; role/deactivate menu preserved via `data-menu` attribute
+- Files: `apps/web/components/modules/team/TeamCard.tsx`
+
+[2026-02-18] [8.4] ✅ DONE — TeamMemberDrawer.tsx (slide-in detail panel)
+- Full-width slide-in drawer (max 560px) with backdrop overlay
+- Header: large avatar, name, role, "Generate Productivity Coach Report" link, close button
+- Info row: email, role, created date
+- 3 tabs: Stats (default), Activities, Screenshots
+- Stats tab: date range picker (7-day default), working/activity/idle/break progress cards, total time badges, 3 productivity donut charts (reuses DonutChart from overview)
+- Activities tab: time entries list with project dots, descriptions, durations
+- Screenshots tab: 2-column thumbnail grid with activity level badges
+- Date range changes auto-refresh data via useCallback/useEffect
+- Files: `apps/web/components/modules/team/TeamMemberDrawer.tsx`
+
+[2026-02-18] [8.5] ✅ DONE — Team page.tsx rewrite
+- Status filter tabs with computed counts from member data via useMemo
+- 3-column card grid with filtering by active status
+- Member detail drawer opens on card click, closes on X or backdrop click
+- "Generate Productivity Coach Report" button in header
+- Add Member form preserved with branded styling (rounded-xl, focus rings)
+- All existing functionality (role change, deactivate, add member) intact
+- Files: `apps/web/app/(dashboard)/team/page.tsx`
+
+**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors. Lint check — 0 warnings.
+
+### 2026-02-18 — Session 16 (Phase 9: Customers, Projects Redesign, Tasks Pages)
+
+[2026-02-18] [9.1] ✅ DONE — Schema additions (Prisma)
+- Client model: added `surname`, `website`, `tax_office`, `tax_number` fields
+- New `ProjectMember` join table (project_id + member_id, unique constraint, cascade delete)
+- New `TaskAssignee` join table (task_id + user_id, unique constraint, cascade delete)
+- New `TaskComment` model (task_id, user_id, content, timestamps)
+- New `TaskAttachment` model (task_id, user_id, file_name, file_url, file_size, content_type)
+- Reverse relations added to User, Member, Project, Task models across schema files
+- `prisma db push` + `prisma generate` — all additive, no breaking changes
+- Files: `clients.prisma`, `time-tracking.prisma`, `tasks.prisma`, `core.prisma`
+
+[2026-02-18] [9.2] ✅ DONE — Customers server actions: actions/clients.ts
+- `getClients(search?)` — list with text search on name/company/email/surname, includes project/invoice counts
+- `createClient(params)` — company*, name*, surname, email, phone, website, address (JSON), tax_office, tax_number, notes
+- `updateClient(params)` — same fields + id, org ownership validation
+- `deleteClient(id)` — soft delete with audit log
+- Files: `apps/web/actions/clients.ts`
+
+[2026-02-18] [9.3] ✅ DONE — Customers page rewrite (Worktivity-style)
+- Header: "Customers" title, subtitle, search input, refresh + "Add new customer" button
+- Count badge: "You have N customer(s) here."
+- Table: Company, Name (first+surname), Email (with chevron), Website (clickable link)
+- Row actions: Create Invoice (purple circle), Edit (blue circle), Delete (red circle)
+- Add/Edit modal: all fields matching Worktivity screenshot (Company*, Name*, Surname*, Email, Phone, Website, Address, Tax office, Tax number, Notes)
+- Debounced search (300ms), real-time filtering
+- Files: `apps/web/app/(dashboard)/clients/page.tsx`
+
+[2026-02-18] [9.4] ✅ DONE — Enhanced Projects server actions
+- `getProjects(search?)` — now includes client relation, ProjectMember with user names, task count, and calculated time/cost stats
+- Per-project: `timeSpentSeconds` (sum of TimeEntry durations), `currentCost`, `billableAmount`, `budgetTotal`
+- `addProjectMember(projectId, memberId)` / `removeProjectMember(projectId, memberId)` — manage project team
+- `getOrgMembers()` — list all active org members for pickers
+- `createProject` / `updateProject` — now accept `client_id` and `budget_hours`
+- Files: `apps/web/actions/projects.ts`
+
+[2026-02-18] [9.5] ✅ DONE — Projects page redesign (Worktivity-style)
+- Table with columns: Project name (color dot + chevron), Customer, Employees badge, Tasks badge
+- Expandable rows showing: 4 stat pills (Time spent, Project budget, Current cost, Billable amount)
+- Assigned Employees section with add/remove member picker
+- Notes section (project description)
+- Add/Edit modal with Customer dropdown, Budget Hours, Color picker, Billable toggle
+- Search, refresh, count badge
+- Files: `apps/web/app/(dashboard)/projects/page.tsx`
+
+[2026-02-18] [9.6] ✅ DONE — Tasks server actions: actions/tasks.ts
+- `getTasks(filters)` — paginated list with filtering by search, project, client, assignee, status, priority, assigned_to_me
+- `getTask(id)` — full detail with assignees, comments (with user), attachments (with user)
+- `createTask(params)` — project_id*, title*, description, status, priority, due_date, assignee_ids[]
+- `updateTask(params)` / `deleteTask(id)` / `markTaskComplete(id)`
+- `addTaskAssignee` / `removeTaskAssignee` — many-to-many assignee management
+- `addTaskComment` / `deleteTaskComment` — comment CRUD (delete own only)
+- `deleteTaskAttachment` — attachment deletion
+- Files: `apps/web/actions/tasks.ts`
+
+[2026-02-18] [9.7] ✅ DONE — Task attachments upload API route
+- POST `/api/v1/task-attachments` — accepts FormData (file + taskId)
+- Saves to `public/uploads/attachments/` with unique filename
+- 10MB file size limit, auth + org membership validation
+- Returns attachment record with file URL
+- Files: `apps/web/app/api/v1/task-attachments/route.ts`
+
+[2026-02-18] [9.8] ✅ DONE — Tasks page rewrite (Worktivity-style)
+- Filter bar: Search, Customer dropdown, Project dropdown, Employee dropdown, Status dropdown, Priority dropdown, "Assigned to me" toggle, Refresh
+- Table: Task (title + project color dot), Status (colored badge), Priority (flag icon), Due date (red if overdue)
+- Row actions: Edit (blue circle), Delete (red circle)
+- Pagination: items/page, page numbers, "Go to" input
+- Quick Create modal: Project*, Task*, Status, Priority, Due date
+- Files: `apps/web/app/(dashboard)/tasks/page.tsx`
+
+[2026-02-18] [9.9] ✅ DONE — TaskDetailDrawer.tsx (slide-in detail panel)
+- Top bar: "Mark as complete" green button, Refresh, Delete (red), Close (X)
+- Form fields: Project* (dropdown), Task* (text), Due date, Status, Priority
+- Assignees: user pills with remove, "+" button with member picker dropdown
+- Description: textarea
+- Save Changes button — updates all fields at once
+- Attachments: file list with download/delete, "Add Attachment" button with file upload via API
+- Comments: comment list with user avatar/timestamp/delete, input with send button (Enter key support)
+- Files: `apps/web/components/modules/tasks/TaskDetailDrawer.tsx`
+
+**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors. Lint check — 0 warnings.
+
+---
+
+### 2026-02-18 — Session 17 (Phase 10: Tracking Pages Full Implementation)
+
+[2026-02-18] [10.1] ✅ DONE — Schema: ManualEntryStatus enum + manual_status field on TimeEntry
+- Added `ManualEntryStatus` enum: PENDING | APPROVED | REJECTED
+- Added `manual_status ManualEntryStatus? @default(PENDING)` to TimeEntry model (nullable, only relevant for is_manual=true)
+- `prisma db push` + `prisma generate` — additive only, no breaking changes
+- Files: `apps/web/prisma/modules/time-tracking.prisma`
+
+[2026-02-18] [10.2] ✅ DONE — New server action: actions/manual-entries.ts
+- `getManualEntries(params)` — paginated list filtered by date range, user, status; EMPLOYEE sees own only
+- `createManualEntry(params)` — creates TimeEntry with is_manual=true, manual_status=PENDING; managers can specify userId
+- `updateManualEntry(params)` — resets status to PENDING on edit; EMPLOYEE can only edit own entries
+- `approveManualEntry(id)` / `rejectManualEntry(id)` — manager-only status transitions with audit log
+- `deleteManualEntry(id)` — EMPLOYEE can delete own, managers can delete any
+- Files: `apps/web/actions/manual-entries.ts`
+
+[2026-02-18] [10.3] ✅ DONE — New server action: actions/my-activities.ts
+- `getMyActivitySummary(params)` — parallel queries for TimeEntry, ActivityLog, AppUsageLog, Setting
+- Returns: expectedWorkSeconds (from workday_start/end settings), totalWorkingSeconds, avgActivityPercent, avgActivitySecsPerMin, keyboard/mouse counts, productive/neutral/unproductive pct + seconds, serialized timeEntries + activityLogs
+- `getMyProjects()` — active org projects for filter dropdown
+- Files: `apps/web/actions/my-activities.ts`
+
+[2026-02-18] [10.4] ✅ DONE — New server action: getTimesheetSummary() added to actions/time-entries.ts
+- Groups time entries by user for a date range, parallel query with ActivityLog
+- Per-user: checkIn (min start_time), checkOut (max end_time), avgActivity (from ActivityLog), workingSeconds, totalSeconds, serialized entries array
+- Files: `apps/web/actions/time-entries.ts`
+
+[2026-02-18] [10.5] ✅ DONE — New server action: getTimelapseSessions() added to actions/screenshots.ts
+- Groups screenshots by time_entry_id into "sessions" with thumbnail, user, project, screenshotCount, sorted screenshots array
+- Paginated, filtered by user/date range, sorted by sessionEnd desc
+- Files: `apps/web/actions/screenshots.ts`
+
+[2026-02-18] [10.6] ✅ DONE — New components: activities module
+- `ActivityBar.tsx` — horizontal timeline bar showing time entry segments as colored blocks across 24h, with hover tooltip
+- `ActivitySummaryCards.tsx` — 4 cards: Working (progress bar vs 8h), Activity level (avg sec/min + keyboard/mouse counts), On break, Idle
+- Files: `apps/web/components/modules/activities/ActivityBar.tsx`, `ActivitySummaryCards.tsx`
+
+[2026-02-18] [10.7] ✅ DONE — New components: timelapse module
+- `TimelapseGrid.tsx` — 4-column responsive thumbnail grid with play overlay, screenshot count badge, employee avatar, project dot, date
+- `TimelapsePlayer.tsx` — full-screen modal with image viewer, play/pause cycling at 500ms, prev/next nav, filmstrip scrubber, activity badge, keyboard shortcuts (Space=play, Arrow=nav, Esc=close)
+- Files: `apps/web/components/modules/timelapse/TimelapseGrid.tsx`, `TimelapsePlayer.tsx`
+
+[2026-02-18] [10.8] ✅ DONE — New components: manual-entries module
+- `ManualEntriesTable.tsx` — table with employee avatar, start/end datetime, duration badge, status pill (Pending/Approved/Rejected), action buttons (approve=green check, reject=red X, edit=yellow pencil, delete=red trash)
+- `ManualEntryModal.tsx` — add/edit modal with employee dropdown (managers), project, description, start/end datetime-local inputs, billable checkbox, validation
+- Files: `apps/web/components/modules/manual-entries/ManualEntriesTable.tsx`, `ManualEntryModal.tsx`
+
+[2026-02-18] [10.9] ✅ DONE — Timesheet page full redesign
+- Replaced basic DataTable with Worktivity-style grouped-by-employee view
+- Filter bar: date nav (prev/next day), employee dropdown, refresh button
+- Table: Employee (avatar+name+email), Check-in avg, Check-out avg, Activity level badge (green/yellow/red/gray), Working, Break, Idle, Total columns
+- Expandable rows (click row) showing individual time entries with project, description, start/end, duration, type badge (Manual/Tracked)
+- Export CSV button at bottom
+- Files: `apps/web/app/(dashboard)/timesheets/page.tsx`
+
+[2026-02-18] [10.10] ✅ DONE — My Activities page full implementation
+- Replaced Coming Soon with full activity dashboard
+- Filter bar: date nav, project dropdown, refresh
+- Expected work time alert banner (orange, shows remaining hours vs workday settings)
+- Activity bar: 24h timeline with colored segments per time entry, hover tooltips
+- Total calculated time section: 4 stat cards (Working, Activity level, On break, Idle) with progress bars
+- Total calculated work time section: 3 donut charts (Productive/Neutral/Unproductive) reusing DonutChart from overview
+- Activity history: list of time entries with project dot, description, time range, duration
+- Files: `apps/web/app/(dashboard)/my-activities/page.tsx`
+
+[2026-02-18] [10.11] ✅ DONE — Timelapse Videos page full implementation
+- Replaced Coming Soon with screenshot-based timelapse grid
+- Filter bar: week range nav, employee dropdown, refresh
+- Count: "We found N timelapse videos in your account."
+- 4-column responsive thumbnail grid with play overlay on hover
+- Click opens TimelapsePlayer modal: cycles screenshots at 500ms, filmstrip scrubber, keyboard nav
+- Pagination for >20 sessions
+- Files: `apps/web/app/(dashboard)/timelapse/page.tsx`
+
+[2026-02-18] [10.12] ✅ DONE — Manual Time Entries page full implementation
+- Replaced Coming Soon with full CRUD management page
+- Filter bar: month nav, employee dropdown (managers), status filter, refresh, + Add button
+- Table: employee avatar+name+project, start/end datetime, duration badge, status pill, action buttons
+- Approve/Reject (managers only, shown only for PENDING entries), Edit, Delete
+- Add/Edit modal with all fields, validation, billable toggle
+- Pagination for >12 entries
+- Files: `apps/web/app/(dashboard)/manual-entries/page.tsx`
+
+**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors. All 4 pages fully functional with real database data.
+
+### 2026-02-18 — Session 18 (Phase 11: Review Apps Redesign)
+
+[2026-02-18] [11.1] ✅ DONE — New server action: getReviewAppsData() added to actions/app-usage.ts
+- Groups AppUsageLog entries by app_name + window_title as unique key
+- Returns per-row: key, app_name, window_title, team (org role group), ai_suggestion (from is_productive), category (from AppClassification), first_interaction, last_interaction, total_duration, users count
+- Supports tab filter (unreviewed = UNCLASSIFIED, reviewed = classified), search (app_name + window_title), pagination, user filter
+- Returns unreviewedCount + reviewedCount for tab badges
+- Files: `apps/web/actions/app-usage.ts`
+
+[2026-02-18] [11.2] ✅ DONE — Review Apps page full redesign (Worktivity-style)
+- **Before:** Old aggregated app list with date range pickers, summary cards (total/productive/unproductive), duration bars, classification dropdown
+- **After:** Worktivity-style review workflow matching screenshot exactly
+- Header: "Review apps" + subtitle
+- Filter bar: All teams dropdown + Search input + Export icon button
+- Tabs: "Unreviewed apps (N)" with orange dot + "Reviewed apps (N)" with green dot, underline active indicator
+- Table card with "Applications" title + "Total N" badge top-right
+- Column headers: Application | Team | AI Suggestion | First Interaction | (actions) — with ArrowUpDown sort icons
+- Rows: App icon (emoji for known apps, initial letter for unknown) + app name + URL/domain subtitle | orange team badge | green/yellow/red AI suggestion pill | first interaction datetime | 3 circular action buttons
+- Action buttons: ✓ green (Productive), – yellow (Neutral), ✗ red (Unproductive) — filled when active, outlined when inactive, hover:scale-110, disabled while classifying
+- Reviewed tab shows CategoryBadge under app name
+- Empty states: "All apps reviewed" vs "No reviewed apps yet" with contextual guidance
+- Pagination: Previous/Next with page count
+- TypeScript: 0 errors
+- Files: `apps/web/app/(dashboard)/app-usage/page.tsx`
+
+**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors.
+
 ## Reverted Decisions
 - None currently

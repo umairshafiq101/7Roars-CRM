@@ -17,24 +17,65 @@ async function getAuthContext() {
   return { session, member };
 }
 
-export async function getProjects(): Promise<ApiResponse> {
+export async function getProjects(search?: string): Promise<ApiResponse> {
   const ctx = await getAuthContext();
   if (!ctx) return err("Unauthorized");
 
   try {
+    const where: Record<string, unknown> = {
+      organization_id: ctx.member.organization_id,
+      deleted_at: null,
+    };
+
+    if (search && search.trim()) {
+      where.name = { contains: search.trim(), mode: "insensitive" };
+    }
+
     const projects = await db.project.findMany({
-      where: {
-        organization_id: ctx.member.organization_id,
-        deleted_at: null,
-      },
+      where,
       orderBy: { name: "asc" },
+      include: {
+        client: { select: { id: true, name: true, company: true } },
+        members: {
+          include: {
+            member: {
+              include: { user: { select: { id: true, name: true, email: true } } },
+            },
+          },
+        },
+        _count: { select: { tasks: true } },
+      },
     });
 
-    const serialized = projects.map((p) => ({
-      ...p,
-      hourly_rate: p.hourly_rate ? Number(p.hourly_rate) : null,
-      budget_hours: p.budget_hours ? Number(p.budget_hours) : null,
-    }));
+    const projectIds = projects.map((p) => p.id);
+
+    const timeAggs = await db.timeEntry.groupBy({
+      by: ["project_id"],
+      where: { project_id: { in: projectIds }, duration: { not: null } },
+      _sum: { duration: true },
+    });
+
+    const timeMap = new Map(
+      timeAggs.map((t) => [t.project_id, t._sum.duration ?? 0])
+    );
+
+    const serialized = projects.map((p) => {
+      const totalSeconds = timeMap.get(p.id) || 0;
+      const hourlyRate = p.hourly_rate ? Number(p.hourly_rate) : 0;
+      const budgetHours = p.budget_hours ? Number(p.budget_hours) : 0;
+
+      return {
+        ...p,
+        hourly_rate: hourlyRate || null,
+        budget_hours: budgetHours || null,
+        timeSpentSeconds: totalSeconds,
+        currentCost: hourlyRate ? (totalSeconds / 3600) * hourlyRate : 0,
+        billableAmount: p.is_billable && hourlyRate ? (totalSeconds / 3600) * hourlyRate : 0,
+        budgetTotal: budgetHours && hourlyRate ? budgetHours * hourlyRate : 0,
+        memberCount: p.members.length,
+        taskCount: p._count.tasks,
+      };
+    });
 
     return ok(serialized);
   } catch (error) {
@@ -49,6 +90,8 @@ export async function createProject(params: {
   description?: string;
   is_billable?: boolean;
   hourly_rate?: number;
+  budget_hours?: number;
+  client_id?: string;
 }): Promise<ApiResponse> {
   const ctx = await getAuthContext();
   if (!ctx) return err("Unauthorized");
@@ -62,6 +105,8 @@ export async function createProject(params: {
         description: params.description || null,
         is_billable: params.is_billable ?? true,
         hourly_rate: params.hourly_rate ?? null,
+        budget_hours: params.budget_hours ?? null,
+        client_id: params.client_id || null,
       },
     });
 
@@ -92,6 +137,8 @@ export async function updateProject(params: {
   description?: string;
   is_billable?: boolean;
   hourly_rate?: number;
+  budget_hours?: number;
+  client_id?: string | null;
   status?: string;
 }): Promise<ApiResponse> {
   const ctx = await getAuthContext();
@@ -108,6 +155,8 @@ export async function updateProject(params: {
     if (params.description !== undefined) data.description = params.description;
     if (params.is_billable !== undefined) data.is_billable = params.is_billable;
     if (params.hourly_rate !== undefined) data.hourly_rate = params.hourly_rate;
+    if (params.budget_hours !== undefined) data.budget_hours = params.budget_hours;
+    if (params.client_id !== undefined) data.client_id = params.client_id;
     if (params.status !== undefined) data.status = params.status;
 
     const updated = await db.project.update({
@@ -163,5 +212,63 @@ export async function deleteProject(id: string): Promise<ApiResponse> {
   } catch (error) {
     console.error("[deleteProject]", error);
     return err("Failed to delete project");
+  }
+}
+
+export async function addProjectMember(
+  projectId: string,
+  memberId: string
+): Promise<ApiResponse> {
+  const ctx = await getAuthContext();
+  if (!ctx) return err("Unauthorized");
+
+  try {
+    const project = await db.project.findUnique({ where: { id: projectId } });
+    if (!project) return err("Project not found");
+    if (project.organization_id !== ctx.member.organization_id) return err("Forbidden");
+
+    const pm = await db.projectMember.create({
+      data: { project_id: projectId, member_id: memberId },
+    });
+
+    return ok(pm);
+  } catch (error) {
+    console.error("[addProjectMember]", error);
+    return err("Failed to add member");
+  }
+}
+
+export async function removeProjectMember(
+  projectId: string,
+  memberId: string
+): Promise<ApiResponse> {
+  const ctx = await getAuthContext();
+  if (!ctx) return err("Unauthorized");
+
+  try {
+    await db.projectMember.deleteMany({
+      where: { project_id: projectId, member_id: memberId },
+    });
+    return ok({ removed: true });
+  } catch (error) {
+    console.error("[removeProjectMember]", error);
+    return err("Failed to remove member");
+  }
+}
+
+export async function getOrgMembers(): Promise<ApiResponse> {
+  const ctx = await getAuthContext();
+  if (!ctx) return err("Unauthorized");
+
+  try {
+    const members = await db.member.findMany({
+      where: { organization_id: ctx.member.organization_id, is_active: true },
+      include: { user: { select: { id: true, name: true, email: true } } },
+      orderBy: { user: { name: "asc" } },
+    });
+    return ok(members);
+  } catch (error) {
+    console.error("[getOrgMembers]", error);
+    return err("Failed to fetch members");
   }
 }

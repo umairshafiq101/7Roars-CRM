@@ -1,37 +1,57 @@
 @import "tailwindcss";
 
 :root {
+  /* 7Roars Brand Colors */
   --background: #ffffff;
-  --foreground: #0a0a0a;
-  --sidebar-bg: #111827;
-  --sidebar-text: #e5e7eb;
-  --sidebar-active: #6366f1;
-  --primary: #6366f1;
+  --foreground: #1E1B4B;
+  --primary: #5B4FE9;
   --primary-foreground: #ffffff;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --destructive: #ef4444;
-  --accent: #f3f4f6;
-  --accent-foreground: #111827;
-  --ring: #6366f1;
-  --radius: 0.5rem;
-}
+  --primary-light: #EDE9FE;
+  --accent-orange: #F5A623;
+  --accent-orange-light: #FEF3C7;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --muted: #1f2937;
-    --muted-foreground: #9ca3af;
-    --border: #374151;
-    --accent: #1f2937;
-    --accent-foreground: #f9fafb;
-  }
+  /* Sidebar (light mode) */
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #64748B;
+  --sidebar-text-active: #1E1B4B;
+  --sidebar-active: #5B4FE9;
+  --sidebar-active-bg: #EDE9FE;
+  --sidebar-hover: #F1F5F9;
+  --sidebar-border: #E2E8F0;
+  --sidebar-group-text: #94A3B8;
+
+  /* UI tokens */
+  --muted: #F8F9FC;
+  --muted-foreground: #64748B;
+  --border: #E2E8F0;
+  --destructive: #ef4444;
+  --accent: #F1F5F9;
+  --accent-foreground: #1E1B4B;
+  --ring: #5B4FE9;
+  --radius: 0.5rem;
+  --success: #22C55E;
+  --warning: #F5A623;
+  --card: #ffffff;
+  --card-foreground: #1E1B4B;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: var(--sidebar-border);
+  border-radius: 2px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-text);
 }

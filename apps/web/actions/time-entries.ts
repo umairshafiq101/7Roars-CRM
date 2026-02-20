@@ -245,6 +245,111 @@ export async function getProjects(): Promise<ApiResponse> {
   }
 }
 
+export async function getTimesheetSummary(params: {
+  userId?: string;
+  startDate: string;
+  endDate: string;
+}): Promise<ApiResponse> {
+  const ctx = await getAuthContext();
+  if (!ctx) return err("Unauthorized");
+
+  try {
+    const where: Record<string, unknown> = {
+      start_time: {
+        gte: new Date(params.startDate),
+        lte: new Date(params.endDate),
+      },
+    };
+
+    if (ctx.member.role === "EMPLOYEE") {
+      where.user_id = ctx.session.user.id;
+    } else if (params.userId) {
+      where.user_id = params.userId;
+    }
+
+    const [entries, activityLogs] = await Promise.all([
+      db.timeEntry.findMany({
+        where,
+        include: {
+          project: { select: { id: true, name: true, color: true } },
+          user: { select: { id: true, name: true, email: true, avatar_url: true } },
+        },
+        orderBy: { start_time: "asc" },
+      }),
+      db.activityLog.findMany({
+        where: {
+          ...(ctx.member.role === "EMPLOYEE" ? { user_id: ctx.session.user.id } : params.userId ? { user_id: params.userId } : {}),
+          interval_start: {
+            gte: new Date(params.startDate),
+            lte: new Date(params.endDate),
+          },
+        },
+      }),
+    ]);
+
+    const activityByUser: Record<string, number[]> = {};
+    for (const log of activityLogs) {
+      if (!activityByUser[log.user_id]) activityByUser[log.user_id] = [];
+      activityByUser[log.user_id].push(log.activity_percent);
+    }
+
+    const grouped: Record<string, {
+      user: { id: string; name: string; email: string; avatar_url: string | null };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      entries: any[];
+      checkIn: string | null;
+      checkOut: string | null;
+      avgActivity: number;
+      workingSeconds: number;
+      totalSeconds: number;
+    }> = {};
+
+    for (const entry of entries) {
+      const uid = entry.user_id;
+      if (!grouped[uid]) {
+        grouped[uid] = {
+          user: entry.user,
+          entries: [],
+          checkIn: null,
+          checkOut: null,
+          avgActivity: 0,
+          workingSeconds: 0,
+          totalSeconds: 0,
+        };
+      }
+      grouped[uid].entries.push(entry);
+      grouped[uid].totalSeconds += entry.duration || 0;
+      if (entry.end_time) grouped[uid].workingSeconds += entry.duration || 0;
+
+      const st = entry.start_time instanceof Date ? entry.start_time.toISOString() : String(entry.start_time);
+      const et = entry.end_time instanceof Date ? entry.end_time.toISOString() : entry.end_time ? String(entry.end_time) : null;
+
+      if (!grouped[uid].checkIn || st < grouped[uid].checkIn!) grouped[uid].checkIn = st;
+      if (et && (!grouped[uid].checkOut || et > grouped[uid].checkOut!)) grouped[uid].checkOut = et;
+    }
+
+    for (const uid of Object.keys(grouped)) {
+      const logs = activityByUser[uid] || [];
+      grouped[uid].avgActivity = logs.length > 0
+        ? Math.round(logs.reduce((s, v) => s + v, 0) / logs.length)
+        : 0;
+
+      grouped[uid].entries = grouped[uid].entries.map((e) => ({
+        ...e,
+        start_time: e.start_time instanceof Date ? e.start_time.toISOString() : e.start_time,
+        end_time: e.end_time instanceof Date ? e.end_time.toISOString() : e.end_time,
+        created_at: e.created_at instanceof Date ? e.created_at.toISOString() : e.created_at,
+        updated_at: e.updated_at instanceof Date ? e.updated_at.toISOString() : e.updated_at,
+      }));
+    }
+
+    return ok(Object.values(grouped));
+  } catch (error) {
+    console.error("[getTimesheetSummary]", error);
+    return err("Failed to fetch timesheet summary");
+  }
+}
+
 export async function getTeamMembers(): Promise<ApiResponse> {
   const ctx = await getAuthContext();
   if (!ctx) return err("Unauthorized");

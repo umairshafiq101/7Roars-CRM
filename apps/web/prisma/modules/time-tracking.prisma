@@ -17,6 +17,19 @@ model Project {
   client          Client?       @relation(fields: [client_id], references: [id])
   time_entries    TimeEntry[]
   tasks           Task[]
+  members         ProjectMember[]
+}
+
+model ProjectMember {
+  id         String   @id @default(cuid())
+  project_id String
+  member_id  String
+  created_at DateTime @default(now())
+
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  member     Member   @relation(fields: [member_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, member_id])
 }
 
 enum ProjectStatus {
@@ -27,18 +40,19 @@ enum ProjectStatus {
 }
 
 model TimeEntry {
-  id           String    @id @default(cuid())
-  user_id      String
-  project_id   String?
-  task_id      String?
-  description  String?
-  start_time   DateTime
-  end_time     DateTime?
-  duration     Int?
-  is_manual    Boolean   @default(false)
-  is_billable  Boolean   @default(true)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
+  id             String             @id @default(cuid())
+  user_id        String
+  project_id     String?
+  task_id        String?
+  description    String?
+  start_time     DateTime
+  end_time       DateTime?
+  duration       Int?
+  is_manual      Boolean            @default(false)
+  manual_status  ManualEntryStatus? @default(PENDING)
+  is_billable    Boolean            @default(true)
+  created_at     DateTime           @default(now())
+  updated_at     DateTime           @updatedAt
 
   user         User      @relation(fields: [user_id], references: [id])
   project      Project?  @relation(fields: [project_id], references: [id])
@@ -116,4 +130,10 @@ enum AppCategory {
   UNPRODUCTIVE
   NEUTRAL
   UNCLASSIFIED
+}
+
+enum ManualEntryStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

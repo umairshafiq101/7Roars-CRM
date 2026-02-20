@@ -28,7 +28,6 @@ export default function RegisterPage() {
       if (result.error) {
         setError(result.error.message || "Registration failed");
       } else {
-        // Update organization name if provided
         if (orgName.trim()) {
           await updateOrganizationName(orgName.trim());
         }
@@ -42,18 +41,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-8 shadow-sm">
-      <h2 className="mb-6 text-xl font-semibold">Create your account</h2>
+    <div className="rounded-xl border border-[var(--border)] bg-white p-8 shadow-sm">
+      <h2 className="mb-1 text-xl font-bold text-[var(--foreground)]">
+        Create your account
+      </h2>
+      <p className="mb-6 text-sm text-[var(--muted-foreground)]">
+        Get started with 7Roars Agency OS
+      </p>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-100 p-3 text-sm text-red-600">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium">
+          <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">
             Full Name
           </label>
           <input
@@ -62,13 +66,13 @@ export default function RegisterPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm outline-none transition-shadow focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
             placeholder="Umair Shafiq"
           />
         </div>
 
         <div>
-          <label htmlFor="orgName" className="mb-1 block text-sm font-medium">
+          <label htmlFor="orgName" className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">
             Organization Name
           </label>
           <input
@@ -77,13 +81,13 @@ export default function RegisterPage() {
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
             required
-            className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm outline-none transition-shadow focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
             placeholder="7Roars Digital Agency"
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">
             Email
           </label>
           <input
@@ -92,13 +96,13 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm outline-none transition-shadow focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
             placeholder="you@7roars.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium">
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">
             Password
           </label>
           <input
@@ -108,7 +112,7 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
-            className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm outline-none transition-shadow focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
             placeholder="Min 8 characters"
           />
         </div>
@@ -116,15 +120,15 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50"
+          className="w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#4F43D9] hover:shadow-md disabled:opacity-50"
         >
           {loading ? "Creating account..." : "Create account"}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-[var(--muted-foreground)]">
+      <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
         Already have an account?{" "}
-        <Link href="/login" className="text-[var(--primary)] hover:underline">
+        <Link href="/login" className="font-semibold text-[var(--primary)] hover:underline">
           Sign in
         </Link>
       </p>

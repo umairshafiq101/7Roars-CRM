@@ -35,6 +35,9 @@ model User {
   audit_logs     AuditLog[]
   sessions       Session[]
   accounts       Account[]
+  task_assignees   TaskAssignee[]
+  task_comments    TaskComment[]
+  task_attachments TaskAttachment[]
 }
 
 model Member {
@@ -50,6 +53,7 @@ model Member {
 
   user            User         @relation(fields: [user_id], references: [id])
   organization    Organization @relation(fields: [organization_id], references: [id])
+  project_members ProjectMember[]
 
   @@unique([user_id, organization_id])
 }

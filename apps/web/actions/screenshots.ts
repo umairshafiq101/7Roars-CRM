@@ -79,6 +79,114 @@ export async function getScreenshots(params: {
   }
 }
 
+export async function getTimelapseSessions(params: {
+  userId?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}): Promise<ApiResponse> {
+  const ctx = await getAuthContext();
+  if (!ctx) return err("Unauthorized");
+
+  try {
+    const page = params.page || 1;
+    const limit = Math.min(params.limit || 20, 100);
+    const where: Record<string, unknown> = {
+      time_entry_id: { not: null },
+    };
+
+    if (ctx.member.role === "EMPLOYEE") {
+      where.user_id = ctx.session.user.id;
+    } else if (params.userId) {
+      where.user_id = params.userId;
+    }
+
+    if (params.startDate || params.endDate) {
+      where.captured_at = {};
+      if (params.startDate)
+        (where.captured_at as Record<string, unknown>).gte = new Date(params.startDate);
+      if (params.endDate)
+        (where.captured_at as Record<string, unknown>).lte = new Date(params.endDate);
+    }
+
+    const screenshots = await db.screenshot.findMany({
+      where,
+      include: {
+        user: { select: { id: true, name: true, email: true, avatar_url: true } },
+        time_entry: {
+          select: {
+            id: true,
+            description: true,
+            start_time: true,
+            end_time: true,
+            project: { select: { id: true, name: true, color: true } },
+          },
+        },
+      },
+      orderBy: { captured_at: "asc" },
+    });
+
+    const sessionMap: Record<string, {
+      time_entry_id: string;
+      user: typeof screenshots[0]["user"];
+      project: { id: string; name: string; color: string } | null;
+      description: string | null;
+      sessionStart: string;
+      sessionEnd: string;
+      thumbnail: string;
+      screenshotCount: number;
+      screenshots: { id: string; image_url: string; thumbnail_url: string; captured_at: string; activity_level: number }[];
+    }> = {};
+
+    for (const s of screenshots) {
+      const tid = s.time_entry_id!;
+      const capturedAt = s.captured_at instanceof Date ? s.captured_at.toISOString() : String(s.captured_at);
+
+      if (!sessionMap[tid]) {
+        sessionMap[tid] = {
+          time_entry_id: tid,
+          user: s.user,
+          project: s.time_entry?.project ?? null,
+          description: s.time_entry?.description ?? null,
+          sessionStart: capturedAt,
+          sessionEnd: capturedAt,
+          thumbnail: s.thumbnail_url,
+          screenshotCount: 0,
+          screenshots: [],
+        };
+      }
+
+      if (capturedAt < sessionMap[tid].sessionStart) sessionMap[tid].sessionStart = capturedAt;
+      if (capturedAt > sessionMap[tid].sessionEnd) {
+        sessionMap[tid].sessionEnd = capturedAt;
+        sessionMap[tid].thumbnail = s.thumbnail_url;
+      }
+
+      sessionMap[tid].screenshotCount++;
+      sessionMap[tid].screenshots.push({
+        id: s.id,
+        image_url: s.image_url,
+        thumbnail_url: s.thumbnail_url,
+        captured_at: capturedAt,
+        activity_level: s.activity_level,
+      });
+    }
+
+    const sessions = Object.values(sessionMap)
+      .filter((s) => s.screenshotCount >= 1)
+      .sort((a, b) => b.sessionEnd.localeCompare(a.sessionEnd));
+
+    const total = sessions.length;
+    const paginated = sessions.slice((page - 1) * limit, page * limit);
+
+    return ok(paginated, { page, limit, total });
+  } catch (error) {
+    console.error("[getTimelapseSessions]", error);
+    return err("Failed to fetch timelapse sessions");
+  }
+}
+
 export async function deleteScreenshot(id: string): Promise<ApiResponse> {
   const ctx = await getAuthContext();
   if (!ctx) return err("Unauthorized");
