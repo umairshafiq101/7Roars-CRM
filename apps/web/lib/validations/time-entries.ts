@@ -5,8 +5,8 @@ export const createTimeEntrySchema = z.object({
   task_id: z.string().max(100).nullable().optional(),
   description: z.string().max(1000).nullable().optional(),
   start_time: z.string().datetime(),
-  end_time: z.string().datetime().optional(),
-  duration: z.number().int().min(0).optional(),
+  end_time: z.string().datetime().nullable().optional(),
+  duration: z.number().int().min(0).nullable().optional(),
   is_manual: z.boolean().default(false),
   is_billable: z.boolean().default(true),
 });
@@ -15,8 +15,8 @@ export const updateTimeEntrySchema = z.object({
   project_id: z.string().max(100).nullable().optional(),
   task_id: z.string().max(100).nullable().optional(),
   description: z.string().max(1000).nullable().optional(),
-  end_time: z.string().datetime().optional(),
-  duration: z.number().int().min(0).optional(),
+  end_time: z.string().datetime().nullable().optional(),
+  duration: z.number().int().min(0).nullable().optional(),
   is_billable: z.boolean().optional(),
 });
 
