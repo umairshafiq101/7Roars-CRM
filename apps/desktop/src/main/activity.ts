@@ -73,6 +73,11 @@ export function getIdleSeconds(): number {
 export async function startActivityTracking() {
   if (uiohookInstance) return; // Already running
 
+  // Always initialize timing state before attempting uiohook load
+  // so the powerMonitor fallback can mark slots correctly if uiohook fails
+  lastInputTime = Date.now();
+  intervalStartTime = Date.now();
+
   try {
     const { uIOhook, UiohookKey: _UiohookKey } = await import("uiohook-napi");
 
@@ -101,8 +106,6 @@ export async function startActivityTracking() {
 
     uIOhook.start();
     uiohookInstance = uIOhook;
-    lastInputTime = Date.now();
-    intervalStartTime = Date.now();
 
     console.log("[ACTIVITY] uiohook-napi tracking started");
   } catch (err) {
