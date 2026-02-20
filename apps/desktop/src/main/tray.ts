@@ -2,6 +2,7 @@ import { Tray, Menu, nativeImage, BrowserWindow, app } from "electron";
 import path from "node:path";
 import { getTimerState, startTimerFromTray, stopTimerFromTray, stopTimer } from "./timer";
 import { clearSession } from "./auth";
+import { isUpdateReady, installUpdate } from "./updater";
 
 let tray: Tray | null = null;
 
@@ -89,6 +90,18 @@ export function updateTrayMenu(mainWindow?: BrowserWindow) {
         updateTrayMenu(mainWindow);
       },
     },
+    ...(isUpdateReady()
+      ? [
+          { type: "separator" as const },
+          {
+            label: "🔄 Restart to Update",
+            click: () => {
+              installUpdate();
+            },
+          },
+        ]
+      : []),
+    { type: "separator" as const },
     {
       label: "Quit",
       click: () => {

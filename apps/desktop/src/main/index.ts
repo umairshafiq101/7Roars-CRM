@@ -37,7 +37,7 @@ if (process.platform === "win32") {
 // Enable remote debugging for E2E testing
 app.commandLine.appendSwitch("remote-debugging-port", "9222");
 
-import { createTray, destroyTray } from "./tray";
+import { createTray, destroyTray, updateTrayMenu, getTray } from "./tray";
 import { registerAuthHandlers, startTokenRefreshLoop } from "./auth";
 import { registerTimerHandlers, stopTimer, getTimerState } from "./timer";
 import { registerProjectHandlers } from "./projects";
@@ -46,6 +46,7 @@ import { initStore, startCleanupLoop } from "./store";
 import { startDailySummarySchedule } from "./notifications";
 import { startSyncLoop, registerSyncHandlers } from "./sync";
 import { startActivityTracking, stopActivityTracking } from "./activity";
+import { startAutoUpdater, stopAutoUpdater, onUpdateReady } from "./updater";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -137,6 +138,28 @@ app.on("ready", async () => {
   startCleanupLoop();
   startDailySummarySchedule();
 
+  // Auto-update: only in packaged production app
+  if (!MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    onUpdateReady((releaseName: string) => {
+      // Refresh tray menu to show "Restart to Update" item
+      updateTrayMenu();
+      // Show Windows balloon notification
+      try {
+        const trayInstance = getTray();
+        if (trayInstance) {
+          trayInstance.displayBalloon({
+            title: "7Roars Agent Update Ready",
+            content: `Version ${releaseName} downloaded. Right-click tray → "Restart to Update" to install.`,
+            iconType: "info",
+          });
+        }
+      } catch {
+        // Balloon not supported on all platforms
+      }
+    });
+    startAutoUpdater();
+  }
+
   // Start uiohook global hooks once (always listening for input events)
   // Activity *logging* and idle detection are started/stopped with the timer
   const config = getConfig();
@@ -196,6 +219,7 @@ app.on("window-all-closed", () => {
 app.on("before-quit", async () => {
   await stopTimer();
   stopActivityTracking();
+  stopAutoUpdater();
   destroyTray();
   mainWindow?.destroy();
   app.exit(0);

@@ -1,6 +1,6 @@
 {
   "name": "@7roars/desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "7Roars Agency OS — Desktop Time Tracking Agent",
   "main": ".vite/build/index.js",
   "private": true,
