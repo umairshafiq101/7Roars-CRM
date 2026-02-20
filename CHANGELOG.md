@@ -1274,5 +1274,12 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 
 **Verification:** Clean docker logs (0 errors), all API endpoints responding correctly.
 
+[2026-02-20] [BUG-029b] ✅ FIXED — Screenshots still showing 0% activity (BUG-029 regression)
+- **Symptom:** All ActivityLog records have `activity_percent = 0`, all Screenshot records have `activity_level = 0` despite user actively working
+- **Root cause:** `intervalStartTime` was only set inside the `try` block in `startActivityTracking()` AFTER `uiohook.start()`. When uiohook-napi fails to load (native module issue in dev/packaged), the `catch` block calls `startIdleTimeFallback()` but `intervalStartTime` is still `0`. `markSlotActive()` has a guard `if (intervalStartTime === 0) return` — so the powerMonitor fallback marks nothing, `activeSlots` stays empty forever, activity is always 0%.
+- **Fix:** Moved `lastInputTime = Date.now()` and `intervalStartTime = Date.now()` to BEFORE the try block so they are always initialized regardless of uiohook success/failure. powerMonitor fallback now correctly marks active slots.
+- **Files:** `apps/desktop/src/main/activity.ts`
+- **Note:** This is a desktop-only fix. Since the desktop runs in dev mode via Vite HMR, the fix is live immediately without a rebuild. Restart the desktop agent to apply.
+
 ## Reverted Decisions
 - None currently
