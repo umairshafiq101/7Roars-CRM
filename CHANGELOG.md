@@ -1304,5 +1304,19 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 5. All agents pick up the update within 4 hours automatically
 ```
 
+### 2026-02-23 — Session 21 (Work Times Page Full Implementation)
+
+[2026-02-23] [FEAT] ✅ Work Times page — full Worktivity-style implementation
+- **Feature:** Replaced ComingSoon placeholder with fully functional Work Times page showing org-wide summary cards and per-role employee breakdowns with activity %, working hours, break time, idle time, and late clock-in badges.
+- **New files:**
+  - `apps/web/actions/work-times.ts` — `getWorkTimesData()` server action: queries `TimeEntry` + `ActivityLog` + `Setting`, computes working/break/idle/activity per employee, org-wide summary totals
+  - `apps/web/components/modules/work-times/SummaryCards.tsx` — 4 stat cards with progress bars (Working, On break, Idle, Activity level)
+  - `apps/web/components/modules/work-times/TeamGroup.tsx` — per-role group header + employee table (6 columns)
+  - `apps/web/components/modules/work-times/LateClockInBadge.tsx` — red/green badge comparing first clock-in vs `workday_start` setting
+- **Modified:** `apps/web/app/(dashboard)/work-times/page.tsx` — full page with date nav, All teams/All employees filters, export CSV
+- **Grouping:** Employees grouped by `Member.role` (OWNER → ADMIN → MANAGER → EMPLOYEE) — no schema change needed
+- **Late clock-in logic:** Compares `MIN(TimeEntry.start_time)` vs org `Setting[workday_start]`; red badge if >60s late
+- **Deployed:** Built + pushed to server ✅
+
 ## Reverted Decisions
 - None currently

@@ -201,6 +201,10 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - [x] Phase 11: Review Apps Redesign ✅ COMPLETE
   - [x] 11.1 getReviewAppsData() action — per-entry rows grouped by app+URL, tab/search/pagination support
   - [x] 11.2 /app-usage page full redesign — Worktivity-style with tabs, table, 3-button classify workflow
+- [x] Phase 12: Insights Pages Implementation ✅ IN PROGRESS
+  - [x] 12.1 Desktop auto-update (Squirrel, self-hosted at https://os.7roars.com/updates/) — v1.0.1
+  - [x] 12.2 Work Times page — full implementation (summary cards, team groups by role, late clock-in badges)
+  - [ ] 12.3 Productivity page redesign (Worktivity-style donut charts + per-role team table) ← NEXT
 
 ### Phase 3 Bug Fixes (Session 3b)
 - [x] Fix: package.json `main` → `.vite/build/index.js` (not `main.js`)
@@ -251,6 +255,21 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - All edge cases passed: empty forms, XSS, SQL injection, large upload, duplicate registration
 - Desktop agent E2E: login, start/stop timer, project switch, screenshot pipeline all working
 - See `LOCAL-SETUP-GUIDE.md` for running both apps locally
+
+## New Files Added in Phase 12
+### Web Application (Insights Pages)
+- `apps/web/actions/work-times.ts` — getWorkTimesData() server action (working/break/idle/activity per employee)
+- `apps/web/components/modules/work-times/SummaryCards.tsx` — 4 stat cards with progress bars
+- `apps/web/components/modules/work-times/TeamGroup.tsx` — per-role group with employee table
+- `apps/web/components/modules/work-times/LateClockInBadge.tsx` — red/green late clock-in badge
+### Desktop Agent (Auto-Update)
+- `apps/desktop/src/main/updater.ts` — Squirrel auto-update logic (setFeedURL, checkForUpdates, callbacks)
+### Files Modified in Phase 12
+- `apps/web/app/(dashboard)/work-times/page.tsx` — full implementation replacing ComingSoon
+- `apps/desktop/src/main/tray.ts` — "🔄 Restart to Update" tray item when update ready
+- `apps/desktop/src/main/index.ts` — startAutoUpdater() + balloon notification on update ready
+- `Caddyfile` — route /updates/* static file serving from /srv/updates
+- `docker-compose.prod.yml` — /opt/7roars/updates bind mount into Caddy
 
 ## New Files Added in Phase 5
 ### Desktop Agent
