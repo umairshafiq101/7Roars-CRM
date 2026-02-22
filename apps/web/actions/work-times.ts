@@ -14,12 +14,6 @@ async function getAuthContext() {
   return { session, member };
 }
 
-function secondsToHM(s: number) {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  return `${String(h).padStart(2, "0")} hrs, ${String(m).padStart(2, "0")} mins`;
-}
-
 export type WorkTimesEmployee = {
   userId: string;
   name: string;
@@ -238,4 +232,3 @@ export async function getWorkTimesData(params: {
   }
 }
 
-export { secondsToHM };
