@@ -204,7 +204,8 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - [x] Phase 12: Insights Pages Implementation ✅ IN PROGRESS
   - [x] 12.1 Desktop auto-update (Squirrel, self-hosted at https://os.7roars.com/updates/) — v1.0.1
   - [x] 12.2 Work Times page — full implementation (summary cards, team groups by role, late clock-in badges)
-  - [ ] 12.3 Productivity page redesign (Worktivity-style donut charts + per-role team table) ← NEXT
+  - [x] 12.3 Productivity page redesign (Worktivity-style donut charts + per-role team table)
+  - [x] 12.4 Task Insights page — 6 summary cards + per-client/project task table (working, spent, billable, profit %)
 
 ### Phase 3 Bug Fixes (Session 3b)
 - [x] Fix: package.json `main` → `.vite/build/index.js` (not `main.js`)
@@ -262,10 +263,18 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - `apps/web/components/modules/work-times/SummaryCards.tsx` — 4 stat cards with progress bars
 - `apps/web/components/modules/work-times/TeamGroup.tsx` — per-role group with employee table
 - `apps/web/components/modules/work-times/LateClockInBadge.tsx` — red/green late clock-in badge
+- `apps/web/actions/task-insights.ts` — getTaskInsightsData() + getTaskInsightsProjects() server actions
+- `apps/web/components/modules/task-insights/TaskInsightsSummaryCards.tsx` — 6 stat cards (Tasks/Projects/Working/Spent/Billable/Profit)
+- `apps/web/components/modules/task-insights/TaskInsightsClientGroup.tsx` — per-client/project group with task table
+- `apps/web/components/modules/productivity/ProductivityDonut.tsx` — 3 large SVG ring charts (Productive/Neutral/Unproductive)
+- `apps/web/components/modules/productivity/ProductivityTeamGroup.tsx` — per-role group with productivity % badges
 ### Desktop Agent (Auto-Update)
 - `apps/desktop/src/main/updater.ts` — Squirrel auto-update logic (setFeedURL, checkForUpdates, callbacks)
 ### Files Modified in Phase 12
 - `apps/web/app/(dashboard)/work-times/page.tsx` — full implementation replacing ComingSoon
+- `apps/web/app/(dashboard)/productivity/page.tsx` — full Worktivity-style redesign
+- `apps/web/app/(dashboard)/task-insights/page.tsx` — full implementation replacing ComingSoon
+- `apps/web/actions/productivity.ts` — new getProductivityData() + backward-compat getProductivityAnalysis()
 - `apps/desktop/src/main/tray.ts` — "🔄 Restart to Update" tray item when update ready
 - `apps/desktop/src/main/index.ts` — startAutoUpdater() + balloon notification on update ready
 - `Caddyfile` — route /updates/* static file serving from /srv/updates

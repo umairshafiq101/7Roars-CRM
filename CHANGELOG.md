@@ -1318,5 +1318,18 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 - **Late clock-in logic:** Compares `MIN(TimeEntry.start_time)` vs org `Setting[workday_start]`; red badge if >60s late
 - **Deployed:** Built + pushed to server ✅
 
+### 2026-02-23 — Session 22 (Task Insights Page Full Implementation)
+
+[2026-02-23] [FEAT] ✅ Task Insights page — full Worktivity-style implementation
+- **Feature:** Replaced ComingSoon placeholder with fully functional Task Insights page showing 6 summary cards and per-client/project task breakdowns with total working hours, spent amount, billable amount, and profit % badge.
+- **New files:**
+  - `apps/web/actions/task-insights.ts` — `getTaskInsightsData()`: queries Task + TimeEntry + Project + Client, computes working seconds, spent (member hourly_rate × hours), billable (project hourly_rate × hours), profit % per task; `getTaskInsightsProjects()` for filter dropdown
+  - `apps/web/components/modules/task-insights/TaskInsightsSummaryCards.tsx` — 6 stat cards (Tasks, Projects, Total working, Spent amount, Billable amount, Avg. profit %)
+  - `apps/web/components/modules/task-insights/TaskInsightsClientGroup.tsx` — per-client/project group with colored dot + task count badge + task table (working, spent, billable, profit badge)
+- **Modified:** `apps/web/app/(dashboard)/task-insights/page.tsx` — full page with date nav, All projects filter, summary cards, client groups, export CSV
+- **Grouping:** Tasks grouped by Client (via Task → Project → Client); falls back to project name if no client
+- **Profit logic:** `((billable - spent) / billable) × 100`; green ≥80%, yellow ≥50%, orange ≥0%, red <0%
+- **Deployed:** Built + pushed to server ✅
+
 ## Reverted Decisions
 - None currently
