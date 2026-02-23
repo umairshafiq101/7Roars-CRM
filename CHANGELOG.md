@@ -1341,5 +1341,39 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
   - Clock-in/clock-out `isWorking` now requires online heartbeat too
 - **Deployed:** Built + pushed to server ✅
 
+[2026-02-24] [FEAT] ✅ Advanced Insights page — 3-tab Worktivity-style implementation
+- **Feature:** Replaced ComingSoon placeholder with fully functional Advanced Insights page with 3 tabs: Productivity Trends, Comparison, Activity Heatmap.
+- **New files:**
+  - `apps/web/actions/advanced-insights.ts` — 4 server actions: `getProductivityTrends()` (daily breakdown with trend/peak/previous-period comparison), `getProductivityComparison()` (two-period metrics with % change), `getActivityHeatmap()` (hourly grid per date), `getAdvancedInsightsEmployees()` (filter dropdown)
+  - `apps/web/components/modules/advanced-insights/ProductivityTrends.tsx` — SVG line chart (3 lines: Productive/Neutral/Unproductive), 3 summary cards (Avg Productivity with ↑↓ vs previous, Peak Day, Trend), date range + team + employee filters, Export Chart CSV
+  - `apps/web/components/modules/advanced-insights/ProductivityComparison.tsx` — Two period date pickers, 3 change cards (Productivity/Working Time/Activity Level Change %), grouped bar chart (Period 1 green vs Period 2 indigo), comparison table with difference badges
+  - `apps/web/components/modules/advanced-insights/ActivityHeatmap.tsx` — Hourly heatmap grid (24 cols × N date rows), green gradient cells with % labels, 3 summary cards (Avg Productivity, Peak Hour, Total Working Time), Less→More legend
+- **Modified:** `apps/web/app/(dashboard)/advanced-insights/page.tsx` — full page with tab switcher, "Generate Productivity Coach Report" link
+- **Data sources:** `AppUsageLog` (productive/neutral/unproductive), `ActivityLog` (activity_percent per interval), `TimeEntry` (working seconds)
+- **Deployed:** Built + pushed to server ✅
+
+### 2026-02-24 — Session 24 (AI Productivity Coach — GLM-4.7 Integration)
+
+[2026-02-24] [FEAT] ✅ AI Productivity Coach — Full implementation with Z.AI GLM-4.7 streaming
+- **Feature:** Replaced ComingSoon placeholder with full AI-powered Productivity Coach. Generates rich coaching reports by gathering employee data from 6 existing models, computing 29 derived metrics, and streaming analysis via GLM-4.7 (Z.AI Coding Plan Pro).
+- **New Prisma schema:**
+  - `CoachReport` model in `prisma/modules/time-tracking.prisma` — stores generated reports with type, status, metrics snapshot, and full markdown content
+  - `CoachReportType` enum: ALL_ANALYSIS, WORK_PATTERN, PRODUCTIVITY, WELLNESS_BURNOUT, TEAM_OVERVIEW
+  - `CoachReportStatus` enum: GENERATING, READY, FAILED
+  - Added `coach_reports_about` and `coach_reports_made` relations to `User` in `core.prisma`
+- **New files:**
+  - `apps/web/lib/zai.ts` — Z.AI GLM-4.7 client wrapper using OpenAI SDK with custom baseURL (`https://api.z.ai/api/coding/paas/v4`)
+  - `apps/web/actions/productivity-coach.ts` — 7 server actions: `getCoachReports()`, `getCoachReportById()`, `deleteCoachReport()`, `getCoachEmployees()`, `generateReportNumber()`, `gatherEmployeeMetrics()` (29 metrics), `gatherTeamMetrics()`, `buildPrompt()`, `buildTeamPrompt()`
+  - `apps/web/app/api/v1/ai/coach/route.ts` — SSE streaming endpoint: auth check → gather metrics → stream GLM-4.7 → save to DB
+  - `apps/web/components/modules/productivity-coach/CoachReportList.tsx` — Report table with employee/type filters, status badges, view/delete actions
+  - `apps/web/components/modules/productivity-coach/CreateReportModal.tsx` — Generation config: individual/org, 5 report types, date range (7-30d), info box
+  - `apps/web/components/modules/productivity-coach/CoachReportViewer.tsx` — Streaming markdown renderer with react-markdown + remark-gfm, risk color coding, blinking cursor
+  - `apps/web/components/modules/productivity-coach/CoachReportMeta.tsx` — Sidebar with employee card, report metadata, Export PDF + Copy to Clipboard
+- **Modified:** `apps/web/app/(dashboard)/productivity-coach/page.tsx` — Two-view layout: Report List (default) ↔ Report Viewer with streaming
+- **Metrics computed:** avgDailyWorkHours, avgClockIn/Out, lateClockInCount, earlyClockOutCount, consistencyScore, weekdayDistribution, dailyWorkPatterns, avgActivityPercent, avgKeyboard/MouseCount, idleMinutesPerDay, peakProductivityHour, mostProductiveDay, productiveAppPct, topProductive/UnproductiveApps, topProductiveWebsites, avgBreakMinutesPerDay, overtimeDays, lateNightWorkDays, weekendWorkDays, idlePercentage, burnoutRiskScore (0-100 weighted formula), taskCompletionRate, overdueTasks, avgTaskTurnaroundDays, trendDirection, productivityTrend
+- **Dependencies added:** `openai`, `react-markdown`, `remark-gfm`
+- **Env var required:** `ZAI_API_KEY` (Z.AI Coding Plan Pro)
+- **Note:** `prisma db push` needed on deployment to create CoachReport table
+
 ## Reverted Decisions
 - None currently

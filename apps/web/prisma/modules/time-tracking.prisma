@@ -137,3 +137,39 @@ enum ManualEntryStatus {
   APPROVED
   REJECTED
 }
+
+model CoachReport {
+  id              String            @id @default(cuid())
+  organization_id String
+  user_id         String
+  generated_by    String
+  report_type     CoachReportType
+  report_no       String
+  start_date      DateTime
+  end_date        DateTime
+  metrics_json    Json
+  report_content  String            @db.Text
+  status          CoachReportStatus @default(GENERATING)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  user            User              @relation("coach_report_subject", fields: [user_id], references: [id])
+  generator       User              @relation("coach_report_generator", fields: [generated_by], references: [id])
+
+  @@index([organization_id])
+  @@index([user_id])
+}
+
+enum CoachReportType {
+  ALL_ANALYSIS
+  WORK_PATTERN
+  PRODUCTIVITY
+  WELLNESS_BURNOUT
+  TEAM_OVERVIEW
+}
+
+enum CoachReportStatus {
+  GENERATING
+  READY
+  FAILED
+}

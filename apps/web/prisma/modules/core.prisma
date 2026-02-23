@@ -35,9 +35,11 @@ model User {
   audit_logs     AuditLog[]
   sessions       Session[]
   accounts       Account[]
-  task_assignees   TaskAssignee[]
-  task_comments    TaskComment[]
-  task_attachments TaskAttachment[]
+  task_assignees       TaskAssignee[]
+  task_comments        TaskComment[]
+  task_attachments     TaskAttachment[]
+  coach_reports_about  CoachReport[] @relation("coach_report_subject")
+  coach_reports_made   CoachReport[] @relation("coach_report_generator")
 }
 
 model Member {

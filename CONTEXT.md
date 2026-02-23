@@ -201,13 +201,14 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - [x] Phase 11: Review Apps Redesign ✅ COMPLETE
   - [x] 11.1 getReviewAppsData() action — per-entry rows grouped by app+URL, tab/search/pagination support
   - [x] 11.2 /app-usage page full redesign — Worktivity-style with tabs, table, 3-button classify workflow
-- [x] Phase 12: Insights Pages Implementation ✅ IN PROGRESS
+- [x] Phase 12: Insights Pages Implementation ✅ COMPLETE
   - [x] 12.1 Desktop auto-update (Squirrel, self-hosted at https://os.7roars.com/updates/) — v1.0.1
   - [x] 12.2 Work Times page — full implementation (summary cards, team groups by role, late clock-in badges)
   - [x] 12.3 Productivity page redesign (Worktivity-style donut charts + per-role team table)
   - [x] 12.4 Task Insights page — 6 summary cards + per-client/project task table (working, spent, billable, profit %)
   - [x] 12.5 Bug fix: Overview status cards now use heartbeat-aware logic (matching Team page)
-  - [ ] 12.6 Advanced Insights page — 3 tabs (Productivity Trends, Comparison, Activity Heatmap) ← NEXT
+  - [x] 12.6 Advanced Insights page — 3 tabs (Productivity Trends, Comparison, Activity Heatmap)
+  - [x] 12.7 AI Productivity Coach — GLM-4.7 streaming reports (5 types, 29 metrics, CoachReport DB, SSE streaming)
 
 ### Phase 3 Bug Fixes (Session 3b)
 - [x] Fix: package.json `main` → `.vite/build/index.js` (not `main.js`)

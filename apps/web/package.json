@@ -20,8 +20,11 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
     "next": "^16.1.6",
+    "openai": "^6.22.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "zod": "^4.3.6"
