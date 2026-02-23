@@ -206,6 +206,8 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
   - [x] 12.2 Work Times page — full implementation (summary cards, team groups by role, late clock-in badges)
   - [x] 12.3 Productivity page redesign (Worktivity-style donut charts + per-role team table)
   - [x] 12.4 Task Insights page — 6 summary cards + per-client/project task table (working, spent, billable, profit %)
+  - [x] 12.5 Bug fix: Overview status cards now use heartbeat-aware logic (matching Team page)
+  - [ ] 12.6 Advanced Insights page — 3 tabs (Productivity Trends, Comparison, Activity Heatmap) ← NEXT
 
 ### Phase 3 Bug Fixes (Session 3b)
 - [x] Fix: package.json `main` → `.vite/build/index.js` (not `main.js`)

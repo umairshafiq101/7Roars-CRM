@@ -1331,5 +1331,15 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 - **Profit logic:** `((billable - spent) / billable) × 100`; green ≥80%, yellow ≥50%, orange ≥0%, red <0%
 - **Deployed:** Built + pushed to server ✅
 
+### 2026-02-24 — Session 23 (Overview Status Bug Fix + Advanced Insights)
+
+[2026-02-24] [FIX] ✅ Overview status cards now use heartbeat-aware logic matching Team page
+- **Bug:** Nazim showed as "Working" on Overview but "Idle" on Team page. Root cause: Overview counted anyone with `end_time === null` as working without checking heartbeat online status. Team page correctly required both active timer AND online heartbeat.
+- **Fix in `apps/web/actions/overview.ts`:**
+  - `working` = active timer + online heartbeat (was: active timer only)
+  - `idle` = active timer + NOT online (was: hardcoded `0`)
+  - Clock-in/clock-out `isWorking` now requires online heartbeat too
+- **Deployed:** Built + pushed to server ✅
+
 ## Reverted Decisions
 - None currently
