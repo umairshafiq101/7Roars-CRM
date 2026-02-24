@@ -1352,6 +1352,23 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 - **Data sources:** `AppUsageLog` (productive/neutral/unproductive), `ActivityLog` (activity_percent per interval), `TimeEntry` (working seconds)
 - **Deployed:** Built + pushed to server ✅
 
+### 2026-02-24 — Session 25 (Heartbeat Status Fix + Black Screenshot Detection)
+
+[2026-02-24] [FIX] ✅ Employee status showing "Idle" instead of "Working" on Overview and Team pages
+- **Root cause:** Heartbeat online status was stored in an in-memory `Map` inside the API route handler. Server actions (used by Overview and Team pages) run in a different module instance in Next.js standalone mode, so they always saw an empty Map → all employees with active timers were classified as "idle" instead of "working".
+- **Fix:** Added `last_heartbeat_at` column to `User` model in `core.prisma`. Heartbeat POST now persists timestamp to DB. Created `getOnlineUserIdsFromDB()` function that queries users with `last_heartbeat_at` within 2-minute threshold. Updated `overview.ts` and `team.ts` to use DB-backed query instead of in-memory getter.
+- **Files changed:**
+  - `apps/web/prisma/modules/core.prisma` — Added `last_heartbeat_at DateTime?` to User model
+  - `apps/web/app/api/v1/heartbeat/route.ts` — Added DB persist on POST, `getOnlineUserIdsFromDB()` export, GET now uses DB query
+  - `apps/web/actions/overview.ts` — Switched to `getOnlineUserIdsFromDB()`
+  - `apps/web/actions/team.ts` — Switched to `getOnlineUserIdsFromDB()`
+
+[2026-02-24] [FIX] ⚠️ Black screenshot detection + retry for desktop agent
+- **Issue:** Bilal's screenshots consistently black due to GPU driver issue on his machine
+- **Fix:** Added `isBlackFrame()` detection function that samples PNG buffer bytes. If >95% of sampled pixels are near-black, retries capture at 1280×720 resolution which sometimes bypasses GPU compositing issues.
+- **Files changed:** `apps/desktop/src/main/screenshot.ts` — Added `isBlackFrame()` + retry logic
+- **Note:** Requires desktop app rebuild + redistribute (v1.0.2) to take effect on Bilal's machine
+
 ### 2026-02-24 — Session 24 (AI Productivity Coach — GLM-4.7 Integration)
 
 [2026-02-24] [FEAT] ✅ AI Productivity Coach — Full implementation with Z.AI GLM-4.7 streaming

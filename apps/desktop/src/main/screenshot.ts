@@ -10,6 +10,34 @@ import { getCurrentActivityLevel } from "./activity";
 
 let screenshotTimeout: ReturnType<typeof setTimeout> | null = null;
 
+// Detect black frames caused by GPU driver issues
+// Samples pixels from the raw PNG buffer — if >95% of sampled pixels are near-black, it's a black frame
+function isBlackFrame(pngBuffer: Buffer): boolean {
+  try {
+    // PNG header is 8 bytes, then chunks. Raw pixel data starts after IHDR.
+    // Quick heuristic: sample bytes from the buffer (skip PNG header/metadata).
+    // If the vast majority of non-zero bytes are very low, it's likely black.
+    const dataStart = Math.min(100, pngBuffer.length); // skip PNG headers
+    const sampleSize = Math.min(5000, pngBuffer.length - dataStart);
+    if (sampleSize < 100) return false;
+
+    let darkPixels = 0;
+    let totalSampled = 0;
+    const step = Math.max(1, Math.floor(sampleSize / 500));
+
+    for (let i = dataStart; i < dataStart + sampleSize; i += step) {
+      const val = pngBuffer[i];
+      totalSampled++;
+      if (val < 10) darkPixels++;
+    }
+
+    const darkRatio = darkPixels / totalSampled;
+    return darkRatio > 0.95;
+  } catch {
+    return false;
+  }
+}
+
 function getRandomInterval(): number {
   const config = getConfig();
   const min = config.screenshotInterval.min * 60 * 1000;
@@ -78,14 +106,42 @@ export async function captureScreenshot(): Promise<string | null> {
       if (matched) source = matched;
     }
 
-    const thumbnail = source.thumbnail;
+    let thumbnail = source.thumbnail;
 
     if (thumbnail.isEmpty()) {
       console.error("[SCREENSHOT] Empty thumbnail");
       return null;
     }
 
-    const pngBuffer = thumbnail.toPNG();
+    let pngBuffer = thumbnail.toPNG();
+
+    // Detect black frames (GPU driver issue) — check if image is mostly black
+    if (isBlackFrame(pngBuffer)) {
+      console.warn("[SCREENSHOT] Black frame detected, retrying with smaller size...");
+      // Retry with a smaller thumbnail size which sometimes bypasses GPU issues
+      const retrySources = await desktopCapturer.getSources({
+        types: ["screen"],
+        thumbnailSize: { width: Math.min(width, 1280), height: Math.min(height, 720) },
+      });
+      if (retrySources.length > 0) {
+        let retrySource = retrySources[0];
+        if (retrySources.length > 1) {
+          const displayId = cursorDisplay.id.toString();
+          const matched = retrySources.find((s) => s.display_id === displayId);
+          if (matched) retrySource = matched;
+        }
+        thumbnail = retrySource.thumbnail;
+        if (!thumbnail.isEmpty()) {
+          const retryPng = thumbnail.toPNG();
+          if (!isBlackFrame(retryPng)) {
+            pngBuffer = retryPng;
+            console.log("[SCREENSHOT] Retry succeeded — got valid frame");
+          } else {
+            console.warn("[SCREENSHOT] Retry still black — saving anyway");
+          }
+        }
+      }
+    }
     const isBlurred = config.screenshotMode === "blurred";
 
     let webpBuffer: Buffer;
