@@ -1,20 +1,33 @@
 import { jsonOk, jsonErr } from "@/lib/api-response";
 import { authenticateApiRequest } from "@/lib/api-auth";
+import { db } from "@/lib/db";
 
-// In-memory store for online users (since Socket.io isn't integrated into Next.js dev server)
+// Heartbeat threshold: users seen within this window are "online"
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+
+// In-memory cache (fast path for GET requests within same process)
 const onlineUsers = new Map<string, { userId: string; name: string; lastSeen: number }>();
 
-// Clean up users who haven't sent a heartbeat in 2 minutes
 function cleanupStaleUsers() {
   const now = Date.now();
-  const staleThreshold = 2 * 60 * 1000; // 2 minutes
   for (const [userId, data] of onlineUsers.entries()) {
-    if (now - data.lastSeen > staleThreshold) {
+    if (now - data.lastSeen > ONLINE_THRESHOLD_MS) {
       onlineUsers.delete(userId);
     }
   }
 }
 
+// DB-backed online users query — used by server actions (cross-process safe)
+export async function getOnlineUserIdsFromDB(): Promise<string[]> {
+  const threshold = new Date(Date.now() - ONLINE_THRESHOLD_MS);
+  const users = await db.user.findMany({
+    where: { last_heartbeat_at: { gte: threshold } },
+    select: { id: true },
+  });
+  return users.map((u) => u.id);
+}
+
+// Legacy in-memory getter (kept for backward compat, but prefer DB version)
 export function getHeartbeatOnlineUsers(): string[] {
   cleanupStaleUsers();
   return Array.from(onlineUsers.keys());
@@ -28,17 +41,27 @@ export async function POST(request: Request) {
   try {
     await request.json().catch(() => ({}));
 
-    onlineUsers.set(session!.user.id, {
-      userId: session!.user.id,
+    const userId = session!.user.id;
+    const now = new Date();
+
+    // Update in-memory cache
+    onlineUsers.set(userId, {
+      userId,
       name: session!.user.name || "",
-      lastSeen: Date.now(),
+      lastSeen: now.getTime(),
+    });
+
+    // Persist to DB (the authoritative source)
+    await db.user.update({
+      where: { id: userId },
+      data: { last_heartbeat_at: now },
     });
 
     cleanupStaleUsers();
 
     return jsonOk({
       onlineUserIds: Array.from(onlineUsers.keys()),
-      serverTime: new Date().toISOString(),
+      serverTime: now.toISOString(),
     });
   } catch (err) {
     console.error("[HEARTBEAT POST]", err);
@@ -52,10 +75,11 @@ export async function GET() {
   if (error) return error;
 
   try {
-    cleanupStaleUsers();
+    // Use DB as authoritative source for GET too (cross-process safe)
+    const onlineUserIds = await getOnlineUserIdsFromDB();
 
     return jsonOk({
-      onlineUserIds: Array.from(onlineUsers.keys()),
+      onlineUserIds,
     });
   } catch (err) {
     console.error("[HEARTBEAT GET]", err);

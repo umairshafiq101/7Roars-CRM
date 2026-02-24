@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { getSession } from "@/lib/permissions";
 import { ok, err, type ApiResponse } from "@/lib/api-response";
 import { auditLog } from "@/lib/audit";
-import { getHeartbeatOnlineUsers } from "@/app/api/v1/heartbeat/route";
+import { getOnlineUserIdsFromDB } from "@/app/api/v1/heartbeat/route";
 
 async function getAuthContext() {
   const session = await getSession();
@@ -83,7 +83,7 @@ export async function getTeamMembers(): Promise<ApiResponse> {
 
     let onlineUserIds: string[] = [];
     try {
-      onlineUserIds = getHeartbeatOnlineUsers();
+      onlineUserIds = await getOnlineUserIdsFromDB();
     } catch { /* heartbeat unavailable */ }
     const onlineSet = new Set(onlineUserIds);
 

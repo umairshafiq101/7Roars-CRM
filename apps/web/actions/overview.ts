@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/permissions";
 import { ok, err, type ApiResponse } from "@/lib/api-response";
-import { getHeartbeatOnlineUsers } from "@/app/api/v1/heartbeat/route";
+import { getOnlineUserIdsFromDB } from "@/app/api/v1/heartbeat/route";
 
 async function getAuthContext() {
   const session = await getSession();
@@ -90,7 +90,7 @@ export async function getOverviewData(): Promise<ApiResponse> {
 
     let onlineUserIds: string[] = [];
     try {
-      onlineUserIds = getHeartbeatOnlineUsers();
+      onlineUserIds = await getOnlineUserIdsFromDB();
     } catch {
       // Heartbeat not available, leave empty
     }
