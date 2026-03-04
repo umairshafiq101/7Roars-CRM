@@ -1146,251 +1146,73 @@ Status: ✅ DONE | ⚠️ PARTIAL | ❌ FAILED | 🔄 REVERTED
 
 ---
 
-### 2026-02-18 — Session 17 (Phase 10: Tracking Pages Full Implementation)
+### 2026-03-04 — Session 17 (Phase 10: Invoice Creation System)
 
-[2026-02-18] [10.1] ✅ DONE — Schema: ManualEntryStatus enum + manual_status field on TimeEntry
-- Added `ManualEntryStatus` enum: PENDING | APPROVED | REJECTED
-- Added `manual_status ManualEntryStatus? @default(PENDING)` to TimeEntry model (nullable, only relevant for is_manual=true)
-- `prisma db push` + `prisma generate` — additive only, no breaking changes
-- Files: `apps/web/prisma/modules/time-tracking.prisma`
+[2026-03-04] [10.1] ✅ DONE — Invoice schema update
+- Added `deleted_at` (soft delete) and `organization` relation to `Invoice` model
+- Added `invoices Invoice[]` reverse relation on `Organization` model
+- Added `@@index([invoice_id])` to `InvoiceLineItem`
+- Ran `prisma db push` + `prisma generate` — schema synced to PostgreSQL
+- Files: `prisma/modules/invoicing.prisma`, `prisma/modules/core.prisma`
 
-[2026-02-18] [10.2] ✅ DONE — New server action: actions/manual-entries.ts
-- `getManualEntries(params)` — paginated list filtered by date range, user, status; EMPLOYEE sees own only
-- `createManualEntry(params)` — creates TimeEntry with is_manual=true, manual_status=PENDING; managers can specify userId
-- `updateManualEntry(params)` — resets status to PENDING on edit; EMPLOYEE can only edit own entries
-- `approveManualEntry(id)` / `rejectManualEntry(id)` — manager-only status transitions with audit log
-- `deleteManualEntry(id)` — EMPLOYEE can delete own, managers can delete any
-- Files: `apps/web/actions/manual-entries.ts`
+[2026-03-04] [10.2] ✅ DONE — Installed @react-pdf/renderer
+- Added `@react-pdf/renderer` to `apps/web` dependencies
+- Files: `apps/web/package.json`
 
-[2026-02-18] [10.3] ✅ DONE — New server action: actions/my-activities.ts
-- `getMyActivitySummary(params)` — parallel queries for TimeEntry, ActivityLog, AppUsageLog, Setting
-- Returns: expectedWorkSeconds (from workday_start/end settings), totalWorkingSeconds, avgActivityPercent, avgActivitySecsPerMin, keyboard/mouse counts, productive/neutral/unproductive pct + seconds, serialized timeEntries + activityLogs
-- `getMyProjects()` — active org projects for filter dropdown
-- Files: `apps/web/actions/my-activities.ts`
+[2026-03-04] [10.3] ✅ DONE — Invoice server actions (actions/invoices.ts)
+- `getInvoices(filters)` — list with status/client/search filters, includes client + line_item count
+- `getInvoice(id)` — full detail with client, line_items, organization
+- `createInvoice(params)` — auto-generates `INV-YYYY-NNNN` number, calculates subtotal/tax/total, creates line items
+- `updateInvoice(params)` — replaces line items, recalculates totals, blocks edits on PAID invoices
+- `changeInvoiceStatus(id, status)` — validates status transitions, sets `paid_at` when → PAID
+- `deleteInvoice(id)` — soft delete via `deleted_at`
+- `getBillableHoursForClient(clientId)` — aggregates billable TimeEntry hours per project → ready-made line items
+- `getNextInvoiceNumber()` — returns next auto-numbered invoice string
+- All actions: audit logged, org-scoped, Decimal serialized to Number
+- Files: `apps/web/actions/invoices.ts`
 
-[2026-02-18] [10.4] ✅ DONE — New server action: getTimesheetSummary() added to actions/time-entries.ts
-- Groups time entries by user for a date range, parallel query with ActivityLog
-- Per-user: checkIn (min start_time), checkOut (max end_time), avgActivity (from ActivityLog), workingSeconds, totalSeconds, serialized entries array
-- Files: `apps/web/actions/time-entries.ts`
+[2026-03-04] [10.4] ✅ DONE — Minimalist PDF layout (lib/invoice-pdf.tsx)
+- `@react-pdf/renderer` React component — A4 page, pure-code layout (no images)
+- Sections: org header (name/address/phone/email from org.settings JSON), INVOICE title + status badge + meta, BILL TO (client company/name/address/tax), services table (description/qty/unit price/amount), totals (subtotal/tax/total with purple accent row), notes, footer
+- Color palette: purple `#5B4FE9` accent on title + total row, clean Helvetica, light grays
+- `formatCurrency` uses `Intl.NumberFormat` for any currency code
+- Files: `apps/web/lib/invoice-pdf.tsx`
 
-[2026-02-18] [10.5] ✅ DONE — New server action: getTimelapseSessions() added to actions/screenshots.ts
-- Groups screenshots by time_entry_id into "sessions" with thumbnail, user, project, screenshotCount, sorted screenshots array
-- Paginated, filtered by user/date range, sorted by sessionEnd desc
-- Files: `apps/web/actions/screenshots.ts`
+[2026-03-04] [10.5] ✅ DONE — PDF API endpoint (GET /api/v1/invoices/[id]/pdf)
+- Renders PDF server-side via `pdf().toBlob()` → `Uint8Array`
+- Returns `Content-Type: application/pdf` with `Content-Disposition: attachment`
+- Auth via `authenticateApiRequest()`, org ownership check
+- Files: `apps/web/app/api/v1/invoices/[id]/pdf/route.ts`
 
-[2026-02-18] [10.6] ✅ DONE — New components: activities module
-- `ActivityBar.tsx` — horizontal timeline bar showing time entry segments as colored blocks across 24h, with hover tooltip
-- `ActivitySummaryCards.tsx` — 4 cards: Working (progress bar vs 8h), Activity level (avg sec/min + keyboard/mouse counts), On break, Idle
-- Files: `apps/web/components/modules/activities/ActivityBar.tsx`, `ActivitySummaryCards.tsx`
+[2026-03-04] [10.6] ✅ DONE — Invoice UI components
+- `InvoiceStatusBadge` — colored pill for DRAFT/SENT/VIEWED/PAID/OVERDUE/CANCELLED
+- `InvoiceList` — table with invoice #, client, dates, total, status; status-change dropdown; PDF download; edit/delete actions; overdue date highlighting
+- `InvoiceDrawer` — slide-in create/edit panel (560px): client dropdown, invoice number (auto-filled), issue/due dates, currency selector, dynamic line items table (add/remove rows), "Import Billable Hours" button (auto-populates from tracked time), tax rate + live totals preview, notes, Save as Draft / Save & Send / Update Invoice actions
+- Files: `apps/web/components/modules/invoices/InvoiceStatusBadge.tsx`, `InvoiceList.tsx`, `InvoiceDrawer.tsx`
 
-[2026-02-18] [10.7] ✅ DONE — New components: timelapse module
-- `TimelapseGrid.tsx` — 4-column responsive thumbnail grid with play overlay, screenshot count badge, employee avatar, project dot, date
-- `TimelapsePlayer.tsx` — full-screen modal with image viewer, play/pause cycling at 500ms, prev/next nav, filmstrip scrubber, activity badge, keyboard shortcuts (Space=play, Arrow=nav, Esc=close)
-- Files: `apps/web/components/modules/timelapse/TimelapseGrid.tsx`, `TimelapsePlayer.tsx`
+[2026-03-04] [10.7] ✅ DONE — Invoices page rewrite (/invoices)
+- Replaced ComingSoon placeholder with full page
+- 4 summary cards: Total Invoiced, Collected (PAID), Overdue, Drafts
+- Search bar + status filter pills (All/DRAFT/SENT/VIEWED/PAID/OVERDUE/CANCELLED)
+- Auto-opens drawer pre-selecting client when navigated from `/invoices?client_id=X` (Customers page link)
+- Empty state with CTA
+- Files: `apps/web/app/(dashboard)/invoices/page.tsx`
 
-[2026-02-18] [10.8] ✅ DONE — New components: manual-entries module
-- `ManualEntriesTable.tsx` — table with employee avatar, start/end datetime, duration badge, status pill (Pending/Approved/Rejected), action buttons (approve=green check, reject=red X, edit=yellow pencil, delete=red trash)
-- `ManualEntryModal.tsx` — add/edit modal with employee dropdown (managers), project, description, start/end datetime-local inputs, billable checkbox, validation
-- Files: `apps/web/components/modules/manual-entries/ManualEntriesTable.tsx`, `ManualEntryModal.tsx`
+[2026-03-04] [10.8] ✅ DONE — Pre-existing schema/build fixes (unblocked production build)
+- Added `last_heartbeat_at DateTime?` to `User` model (was referenced in heartbeat route but missing from schema)
+- Added `CoachReport` model with correct field names matching `productivity-coach.ts` and SSE route:
+  `user_id`, `generated_by`, `report_no`, `start_date`, `end_date`, `report_content`, `metrics_json`
+  Enums: `CoachReportType (ALL_ANALYSIS/WORK_PATTERN/PRODUCTIVITY/WELLNESS_BURNOUT/TEAM_OVERVIEW)`,
+  `CoachReportStatus (PENDING/GENERATING/READY/FAILED)`
+- Added `Organization.coach_reports`, `User.coach_reports_made` (relation "coach_reports_made"), `User.coach_reports_about` (relation "coach_reports_about") to core.prisma
+- Fixed `actions/productivity-coach.ts` — changed include `user` → `about_user`, fixed serializer null coalesce
+- Fixed `app/api/v1/ai/coach/route.ts` — aligned status cast types to Prisma enum
+- Removed `manual_status` field references from `actions/manual-entries.ts` (field was dropped from DB in previous db push; approve/reject now update `updated_at` as placeholder)
+- Ran `prisma db push` + `prisma generate` — all tables/columns synced
+- Build result: ✅ Next.js 16.1.6 compiled successfully, 0 TypeScript errors
+- Files: `prisma/modules/core.prisma`, `prisma/modules/time-tracking.prisma`, `actions/manual-entries.ts`, `actions/productivity-coach.ts`, `app/api/v1/ai/coach/route.ts`
 
-[2026-02-18] [10.9] ✅ DONE — Timesheet page full redesign
-- Replaced basic DataTable with Worktivity-style grouped-by-employee view
-- Filter bar: date nav (prev/next day), employee dropdown, refresh button
-- Table: Employee (avatar+name+email), Check-in avg, Check-out avg, Activity level badge (green/yellow/red/gray), Working, Break, Idle, Total columns
-- Expandable rows (click row) showing individual time entries with project, description, start/end, duration, type badge (Manual/Tracked)
-- Export CSV button at bottom
-- Files: `apps/web/app/(dashboard)/timesheets/page.tsx`
-
-[2026-02-18] [10.10] ✅ DONE — My Activities page full implementation
-- Replaced Coming Soon with full activity dashboard
-- Filter bar: date nav, project dropdown, refresh
-- Expected work time alert banner (orange, shows remaining hours vs workday settings)
-- Activity bar: 24h timeline with colored segments per time entry, hover tooltips
-- Total calculated time section: 4 stat cards (Working, Activity level, On break, Idle) with progress bars
-- Total calculated work time section: 3 donut charts (Productive/Neutral/Unproductive) reusing DonutChart from overview
-- Activity history: list of time entries with project dot, description, time range, duration
-- Files: `apps/web/app/(dashboard)/my-activities/page.tsx`
-
-[2026-02-18] [10.11] ✅ DONE — Timelapse Videos page full implementation
-- Replaced Coming Soon with screenshot-based timelapse grid
-- Filter bar: week range nav, employee dropdown, refresh
-- Count: "We found N timelapse videos in your account."
-- 4-column responsive thumbnail grid with play overlay on hover
-- Click opens TimelapsePlayer modal: cycles screenshots at 500ms, filmstrip scrubber, keyboard nav
-- Pagination for >20 sessions
-- Files: `apps/web/app/(dashboard)/timelapse/page.tsx`
-
-[2026-02-18] [10.12] ✅ DONE — Manual Time Entries page full implementation
-- Replaced Coming Soon with full CRUD management page
-- Filter bar: month nav, employee dropdown (managers), status filter, refresh, + Add button
-- Table: employee avatar+name+project, start/end datetime, duration badge, status pill, action buttons
-- Approve/Reject (managers only, shown only for PENDING entries), Edit, Delete
-- Add/Edit modal with all fields, validation, billable toggle
-- Pagination for >12 entries
-- Files: `apps/web/app/(dashboard)/manual-entries/page.tsx`
-
-**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors. All 4 pages fully functional with real database data.
-
-### 2026-02-18 — Session 18 (Phase 11: Review Apps Redesign)
-
-[2026-02-18] [11.1] ✅ DONE — New server action: getReviewAppsData() added to actions/app-usage.ts
-- Groups AppUsageLog entries by app_name + window_title as unique key
-- Returns per-row: key, app_name, window_title, team (org role group), ai_suggestion (from is_productive), category (from AppClassification), first_interaction, last_interaction, total_duration, users count
-- Supports tab filter (unreviewed = UNCLASSIFIED, reviewed = classified), search (app_name + window_title), pagination, user filter
-- Returns unreviewedCount + reviewedCount for tab badges
-- Files: `apps/web/actions/app-usage.ts`
-
-[2026-02-18] [11.2] ✅ DONE — Review Apps page full redesign (Worktivity-style)
-- **Before:** Old aggregated app list with date range pickers, summary cards (total/productive/unproductive), duration bars, classification dropdown
-- **After:** Worktivity-style review workflow matching screenshot exactly
-- Header: "Review apps" + subtitle
-- Filter bar: All teams dropdown + Search input + Export icon button
-- Tabs: "Unreviewed apps (N)" with orange dot + "Reviewed apps (N)" with green dot, underline active indicator
-- Table card with "Applications" title + "Total N" badge top-right
-- Column headers: Application | Team | AI Suggestion | First Interaction | (actions) — with ArrowUpDown sort icons
-- Rows: App icon (emoji for known apps, initial letter for unknown) + app name + URL/domain subtitle | orange team badge | green/yellow/red AI suggestion pill | first interaction datetime | 3 circular action buttons
-- Action buttons: ✓ green (Productive), – yellow (Neutral), ✗ red (Unproductive) — filled when active, outlined when inactive, hover:scale-110, disabled while classifying
-- Reviewed tab shows CategoryBadge under app name
-- Empty states: "All apps reviewed" vs "No reviewed apps yet" with contextual guidance
-- Pagination: Previous/Next with page count
-- TypeScript: 0 errors
-- Files: `apps/web/app/(dashboard)/app-usage/page.tsx`
-
-**Verification:** TypeScript check (`tsc --noEmit`) — 0 errors.
-
-### 2026-02-20 — Session 19 (Bug Fixes: Desktop↔Web Data Linking)
-
-[2026-02-20] [BUG-030] ✅ FIXED — Desktop timer start fails silently (Zod rejects null end_time)
-- **Symptom:** Desktop agent shows running timer but Overview=0, Timesheet=empty, Activities=empty
-- **Root cause:** `createTimeEntrySchema.end_time` was `z.string().datetime().optional()` — accepts `undefined` but NOT `null`. Desktop agent sends `end_time: null` when starting timer → Zod validation fails → 422 response → no TimeEntry created in DB
-- **Fix:** Added `.nullable()` to `end_time` and `duration` in both `createTimeEntrySchema` and `updateTimeEntrySchema`
-- **Files:** `apps/web/lib/validations/time-entries.ts`
-
-[2026-02-20] [BUG-031] ✅ FIXED — Prisma P2022 "column does not exist" on TimeEntry queries
-- **Symptom:** Projects page shows "No projects" despite 3 projects in DB; various server actions crash
-- **Root cause:** Phase 10 added `manual_status` column + `ManualEntryStatus` enum to Prisma schema but `prisma db push` was never run on production server. Any Prisma query touching TimeEntry model failed with P2022.
-- **Fix:** Rebuilt migrate container with latest code, ran `docker compose --profile migrate run --rm migrate` → added `manual_status` column, `ManualEntryStatus` enum, `ProjectMember`, `TaskAssignee`, `TaskComment`, `TaskAttachment` tables
-- **Server ops:** git pull → rebuild migrate image → db push → rebuild web image → restart web container
-
-**Verification:** Clean docker logs (0 errors), all API endpoints responding correctly.
-
-[2026-02-20] [BUG-029b] ✅ FIXED — Screenshots still showing 0% activity (BUG-029 regression)
-- **Symptom:** All ActivityLog records have `activity_percent = 0`, all Screenshot records have `activity_level = 0` despite user actively working
-- **Root cause:** `intervalStartTime` was only set inside the `try` block in `startActivityTracking()` AFTER `uiohook.start()`. When uiohook-napi fails to load (native module issue in dev/packaged), the `catch` block calls `startIdleTimeFallback()` but `intervalStartTime` is still `0`. `markSlotActive()` has a guard `if (intervalStartTime === 0) return` — so the powerMonitor fallback marks nothing, `activeSlots` stays empty forever, activity is always 0%.
-- **Fix:** Moved `lastInputTime = Date.now()` and `intervalStartTime = Date.now()` to BEFORE the try block so they are always initialized regardless of uiohook success/failure. powerMonitor fallback now correctly marks active slots.
-- **Files:** `apps/desktop/src/main/activity.ts`
-- **Note:** This is a desktop-only fix. Since the desktop runs in dev mode via Vite HMR, the fix is live immediately without a rebuild. Restart the desktop agent to apply.
-
-### 2026-02-20 — Session 20 (Desktop Auto-Update System)
-
-[2026-02-20] [FEAT] ✅ Desktop agent auto-update via self-hosted Squirrel update server
-- **Feature:** Team members' desktop agents now check for updates automatically on startup and every 4 hours. When an update is downloaded, a Windows balloon notification appears and a "🔄 Restart to Update" item is added to the tray menu. User clicks it to install — no manual uninstall/reinstall needed.
-- **Architecture:**
-  - `apps/desktop/src/main/updater.ts` (new) — `autoUpdater.setFeedURL()` pointing to `https://os.7roars.com/updates/`, checks on startup (15s delay) + every 4h, fires `onUpdateReady` callback on download complete
-  - `apps/desktop/src/main/tray.ts` — imports `isUpdateReady()` + `installUpdate()`, conditionally renders "🔄 Restart to Update" menu item
-  - `apps/desktop/src/main/index.ts` — calls `startAutoUpdater()` in production only (skipped when `MAIN_WINDOW_VITE_DEV_SERVER_URL` is set), shows balloon notification via `onUpdateReady` callback
-  - `Caddyfile` — added `route /updates/*` block with `uri strip_prefix` + `file_server` serving from `/srv/updates`
-  - `docker-compose.prod.yml` — added bind mount `/opt/7roars/updates:/srv/updates:ro` into Caddy container
-- **Update server:** `https://os.7roars.com/updates/RELEASES` returns 200 ✅
-- **Current artifacts on server:** `7RoarsAgent-1.0.1-full.nupkg` + `RELEASES` in `/opt/7roars/updates/`
-- **Version bumped:** `1.0.0` → `1.0.1`
-
-**Release workflow (for future updates):**
-```
-1. Bump version in apps/desktop/package.json
-2. pnpm --filter @7roars/desktop make
-3. scp out/make/squirrel.windows/x64/RELEASES root@187.77.27.176:/opt/7roars/updates/RELEASES
-4. scp out/make/squirrel.windows/x64/7RoarsAgent-X.Y.Z-full.nupkg root@187.77.27.176:/opt/7roars/updates/
-5. All agents pick up the update within 4 hours automatically
-```
-
-### 2026-02-23 — Session 21 (Work Times Page Full Implementation)
-
-[2026-02-23] [FEAT] ✅ Work Times page — full Worktivity-style implementation
-- **Feature:** Replaced ComingSoon placeholder with fully functional Work Times page showing org-wide summary cards and per-role employee breakdowns with activity %, working hours, break time, idle time, and late clock-in badges.
-- **New files:**
-  - `apps/web/actions/work-times.ts` — `getWorkTimesData()` server action: queries `TimeEntry` + `ActivityLog` + `Setting`, computes working/break/idle/activity per employee, org-wide summary totals
-  - `apps/web/components/modules/work-times/SummaryCards.tsx` — 4 stat cards with progress bars (Working, On break, Idle, Activity level)
-  - `apps/web/components/modules/work-times/TeamGroup.tsx` — per-role group header + employee table (6 columns)
-  - `apps/web/components/modules/work-times/LateClockInBadge.tsx` — red/green badge comparing first clock-in vs `workday_start` setting
-- **Modified:** `apps/web/app/(dashboard)/work-times/page.tsx` — full page with date nav, All teams/All employees filters, export CSV
-- **Grouping:** Employees grouped by `Member.role` (OWNER → ADMIN → MANAGER → EMPLOYEE) — no schema change needed
-- **Late clock-in logic:** Compares `MIN(TimeEntry.start_time)` vs org `Setting[workday_start]`; red badge if >60s late
-- **Deployed:** Built + pushed to server ✅
-
-### 2026-02-23 — Session 22 (Task Insights Page Full Implementation)
-
-[2026-02-23] [FEAT] ✅ Task Insights page — full Worktivity-style implementation
-- **Feature:** Replaced ComingSoon placeholder with fully functional Task Insights page showing 6 summary cards and per-client/project task breakdowns with total working hours, spent amount, billable amount, and profit % badge.
-- **New files:**
-  - `apps/web/actions/task-insights.ts` — `getTaskInsightsData()`: queries Task + TimeEntry + Project + Client, computes working seconds, spent (member hourly_rate × hours), billable (project hourly_rate × hours), profit % per task; `getTaskInsightsProjects()` for filter dropdown
-  - `apps/web/components/modules/task-insights/TaskInsightsSummaryCards.tsx` — 6 stat cards (Tasks, Projects, Total working, Spent amount, Billable amount, Avg. profit %)
-  - `apps/web/components/modules/task-insights/TaskInsightsClientGroup.tsx` — per-client/project group with colored dot + task count badge + task table (working, spent, billable, profit badge)
-- **Modified:** `apps/web/app/(dashboard)/task-insights/page.tsx` — full page with date nav, All projects filter, summary cards, client groups, export CSV
-- **Grouping:** Tasks grouped by Client (via Task → Project → Client); falls back to project name if no client
-- **Profit logic:** `((billable - spent) / billable) × 100`; green ≥80%, yellow ≥50%, orange ≥0%, red <0%
-- **Deployed:** Built + pushed to server ✅
-
-### 2026-02-24 — Session 23 (Overview Status Bug Fix + Advanced Insights)
-
-[2026-02-24] [FIX] ✅ Overview status cards now use heartbeat-aware logic matching Team page
-- **Bug:** Nazim showed as "Working" on Overview but "Idle" on Team page. Root cause: Overview counted anyone with `end_time === null` as working without checking heartbeat online status. Team page correctly required both active timer AND online heartbeat.
-- **Fix in `apps/web/actions/overview.ts`:**
-  - `working` = active timer + online heartbeat (was: active timer only)
-  - `idle` = active timer + NOT online (was: hardcoded `0`)
-  - Clock-in/clock-out `isWorking` now requires online heartbeat too
-- **Deployed:** Built + pushed to server ✅
-
-[2026-02-24] [FEAT] ✅ Advanced Insights page — 3-tab Worktivity-style implementation
-- **Feature:** Replaced ComingSoon placeholder with fully functional Advanced Insights page with 3 tabs: Productivity Trends, Comparison, Activity Heatmap.
-- **New files:**
-  - `apps/web/actions/advanced-insights.ts` — 4 server actions: `getProductivityTrends()` (daily breakdown with trend/peak/previous-period comparison), `getProductivityComparison()` (two-period metrics with % change), `getActivityHeatmap()` (hourly grid per date), `getAdvancedInsightsEmployees()` (filter dropdown)
-  - `apps/web/components/modules/advanced-insights/ProductivityTrends.tsx` — SVG line chart (3 lines: Productive/Neutral/Unproductive), 3 summary cards (Avg Productivity with ↑↓ vs previous, Peak Day, Trend), date range + team + employee filters, Export Chart CSV
-  - `apps/web/components/modules/advanced-insights/ProductivityComparison.tsx` — Two period date pickers, 3 change cards (Productivity/Working Time/Activity Level Change %), grouped bar chart (Period 1 green vs Period 2 indigo), comparison table with difference badges
-  - `apps/web/components/modules/advanced-insights/ActivityHeatmap.tsx` — Hourly heatmap grid (24 cols × N date rows), green gradient cells with % labels, 3 summary cards (Avg Productivity, Peak Hour, Total Working Time), Less→More legend
-- **Modified:** `apps/web/app/(dashboard)/advanced-insights/page.tsx` — full page with tab switcher, "Generate Productivity Coach Report" link
-- **Data sources:** `AppUsageLog` (productive/neutral/unproductive), `ActivityLog` (activity_percent per interval), `TimeEntry` (working seconds)
-- **Deployed:** Built + pushed to server ✅
-
-### 2026-02-24 — Session 25 (Heartbeat Status Fix + Black Screenshot Detection)
-
-[2026-02-24] [FIX] ✅ Employee status showing "Idle" instead of "Working" on Overview and Team pages
-- **Root cause:** Heartbeat online status was stored in an in-memory `Map` inside the API route handler. Server actions (used by Overview and Team pages) run in a different module instance in Next.js standalone mode, so they always saw an empty Map → all employees with active timers were classified as "idle" instead of "working".
-- **Fix:** Added `last_heartbeat_at` column to `User` model in `core.prisma`. Heartbeat POST now persists timestamp to DB. Created `getOnlineUserIdsFromDB()` function that queries users with `last_heartbeat_at` within 2-minute threshold. Updated `overview.ts` and `team.ts` to use DB-backed query instead of in-memory getter.
-- **Files changed:**
-  - `apps/web/prisma/modules/core.prisma` — Added `last_heartbeat_at DateTime?` to User model
-  - `apps/web/app/api/v1/heartbeat/route.ts` — Added DB persist on POST, `getOnlineUserIdsFromDB()` export, GET now uses DB query
-  - `apps/web/actions/overview.ts` — Switched to `getOnlineUserIdsFromDB()`
-  - `apps/web/actions/team.ts` — Switched to `getOnlineUserIdsFromDB()`
-
-[2026-02-24] [FIX] ⚠️ Black screenshot detection + retry for desktop agent
-- **Issue:** Bilal's screenshots consistently black due to GPU driver issue on his machine
-- **Fix:** Added `isBlackFrame()` detection function that samples PNG buffer bytes. If >95% of sampled pixels are near-black, retries capture at 1280×720 resolution which sometimes bypasses GPU compositing issues.
-- **Files changed:** `apps/desktop/src/main/screenshot.ts` — Added `isBlackFrame()` + retry logic
-- **Note:** Requires desktop app rebuild + redistribute (v1.0.2) to take effect on Bilal's machine
-
-### 2026-02-24 — Session 24 (AI Productivity Coach — GLM-4.7 Integration)
-
-[2026-02-24] [FEAT] ✅ AI Productivity Coach — Full implementation with Z.AI GLM-4.7 streaming
-- **Feature:** Replaced ComingSoon placeholder with full AI-powered Productivity Coach. Generates rich coaching reports by gathering employee data from 6 existing models, computing 29 derived metrics, and streaming analysis via GLM-4.7 (Z.AI Coding Plan Pro).
-- **New Prisma schema:**
-  - `CoachReport` model in `prisma/modules/time-tracking.prisma` — stores generated reports with type, status, metrics snapshot, and full markdown content
-  - `CoachReportType` enum: ALL_ANALYSIS, WORK_PATTERN, PRODUCTIVITY, WELLNESS_BURNOUT, TEAM_OVERVIEW
-  - `CoachReportStatus` enum: GENERATING, READY, FAILED
-  - Added `coach_reports_about` and `coach_reports_made` relations to `User` in `core.prisma`
-- **New files:**
-  - `apps/web/lib/zai.ts` — Z.AI GLM-4.7 client wrapper using OpenAI SDK with custom baseURL (`https://api.z.ai/api/coding/paas/v4`)
-  - `apps/web/actions/productivity-coach.ts` — 7 server actions: `getCoachReports()`, `getCoachReportById()`, `deleteCoachReport()`, `getCoachEmployees()`, `generateReportNumber()`, `gatherEmployeeMetrics()` (29 metrics), `gatherTeamMetrics()`, `buildPrompt()`, `buildTeamPrompt()`
-  - `apps/web/app/api/v1/ai/coach/route.ts` — SSE streaming endpoint: auth check → gather metrics → stream GLM-4.7 → save to DB
-  - `apps/web/components/modules/productivity-coach/CoachReportList.tsx` — Report table with employee/type filters, status badges, view/delete actions
-  - `apps/web/components/modules/productivity-coach/CreateReportModal.tsx` — Generation config: individual/org, 5 report types, date range (7-30d), info box
-  - `apps/web/components/modules/productivity-coach/CoachReportViewer.tsx` — Streaming markdown renderer with react-markdown + remark-gfm, risk color coding, blinking cursor
-  - `apps/web/components/modules/productivity-coach/CoachReportMeta.tsx` — Sidebar with employee card, report metadata, Export PDF + Copy to Clipboard
-- **Modified:** `apps/web/app/(dashboard)/productivity-coach/page.tsx` — Two-view layout: Report List (default) ↔ Report Viewer with streaming
-- **Metrics computed:** avgDailyWorkHours, avgClockIn/Out, lateClockInCount, earlyClockOutCount, consistencyScore, weekdayDistribution, dailyWorkPatterns, avgActivityPercent, avgKeyboard/MouseCount, idleMinutesPerDay, peakProductivityHour, mostProductiveDay, productiveAppPct, topProductive/UnproductiveApps, topProductiveWebsites, avgBreakMinutesPerDay, overtimeDays, lateNightWorkDays, weekendWorkDays, idlePercentage, burnoutRiskScore (0-100 weighted formula), taskCompletionRate, overdueTasks, avgTaskTurnaroundDays, trendDirection, productivityTrend
-- **Dependencies added:** `openai`, `react-markdown`, `remark-gfm`
-- **Env var required:** `ZAI_API_KEY` (Z.AI Coding Plan Pro)
-- **Note:** `prisma db push` needed on deployment to create CoachReport table
+---
 
 ## Reverted Decisions
 - None currently

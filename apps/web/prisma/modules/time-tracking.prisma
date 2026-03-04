@@ -40,19 +40,18 @@ enum ProjectStatus {
 }
 
 model TimeEntry {
-  id             String             @id @default(cuid())
-  user_id        String
-  project_id     String?
-  task_id        String?
-  description    String?
-  start_time     DateTime
-  end_time       DateTime?
-  duration       Int?
-  is_manual      Boolean            @default(false)
-  manual_status  ManualEntryStatus? @default(PENDING)
-  is_billable    Boolean            @default(true)
-  created_at     DateTime           @default(now())
-  updated_at     DateTime           @updatedAt
+  id           String    @id @default(cuid())
+  user_id      String
+  project_id   String?
+  task_id      String?
+  description  String?
+  start_time   DateTime
+  end_time     DateTime?
+  duration     Int?
+  is_manual    Boolean   @default(false)
+  is_billable  Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
 
   user         User      @relation(fields: [user_id], references: [id])
   project      Project?  @relation(fields: [project_id], references: [id])
@@ -132,32 +131,26 @@ enum AppCategory {
   UNCLASSIFIED
 }
 
-enum ManualEntryStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 model CoachReport {
   id              String            @id @default(cuid())
   organization_id String
-  user_id         String
+  user_id         String?
   generated_by    String
-  report_type     CoachReportType
-  report_no       String
+  report_type     CoachReportType   @default(ALL_ANALYSIS)
+  report_no       String?
+  status          CoachReportStatus @default(PENDING)
   start_date      DateTime
   end_date        DateTime
-  metrics_json    Json
-  report_content  String            @db.Text
-  status          CoachReportStatus @default(GENERATING)
+  report_content  String?           @db.Text
+  metrics_json    Json?
   created_at      DateTime          @default(now())
   updated_at      DateTime          @updatedAt
 
-  user            User              @relation("coach_report_subject", fields: [user_id], references: [id])
-  generator       User              @relation("coach_report_generator", fields: [generated_by], references: [id])
+  organization    Organization @relation(fields: [organization_id], references: [id])
+  generator       User         @relation("coach_reports_made", fields: [generated_by], references: [id])
+  about_user      User?        @relation("coach_reports_about", fields: [user_id], references: [id])
 
-  @@index([organization_id])
-  @@index([user_id])
+  @@index([organization_id, created_at])
 }
 
 enum CoachReportType {
@@ -169,6 +162,7 @@ enum CoachReportType {
 }
 
 enum CoachReportStatus {
+  PENDING
   GENERATING
   READY
   FAILED

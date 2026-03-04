@@ -11,6 +11,8 @@ model Organization {
   members             Member[]
   projects            Project[]
   clients             Client[]
+  invoices            Invoice[]
+  coach_reports       CoachReport[]
   settings_entries    Setting[]
   app_classifications AppClassification[]
 }
@@ -23,10 +25,10 @@ model User {
   image         String?
   avatar_url    String?
   timezone      String   @default("Asia/Karachi")
-  is_active         Boolean   @default(true)
-  last_heartbeat_at DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  is_active          Boolean   @default(true)
+  last_heartbeat_at  DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   members        Member[]
   time_entries   TimeEntry[]
@@ -36,11 +38,11 @@ model User {
   audit_logs     AuditLog[]
   sessions       Session[]
   accounts       Account[]
-  task_assignees       TaskAssignee[]
-  task_comments        TaskComment[]
-  task_attachments     TaskAttachment[]
-  coach_reports_about  CoachReport[] @relation("coach_report_subject")
-  coach_reports_made   CoachReport[] @relation("coach_report_generator")
+  task_assignees      TaskAssignee[]
+  task_comments       TaskComment[]
+  task_attachments    TaskAttachment[]
+  coach_reports_made  CoachReport[]  @relation("coach_reports_made")
+  coach_reports_about CoachReport[]  @relation("coach_reports_about")
 }
 
 model Member {

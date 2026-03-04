@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     const report = await db.coachReport.create({
       data: {
         organization_id: orgId,
-        user_id: targetUserId,
+        user_id: targetUserId === session!.user.id && reportType === "TEAM_OVERVIEW" ? null : targetUserId,
         generated_by: session!.user.id,
         report_type: reportType as "ALL_ANALYSIS" | "WORK_PATTERN" | "PRODUCTIVITY" | "WELLNESS_BURNOUT" | "TEAM_OVERVIEW",
         report_no: reportNo,
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
             where: { id: reportId },
             data: {
               report_content: fullContent,
-              status: "READY",
+              status: "READY" as "READY",
             },
           });
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
           // Mark report as failed
           await db.coachReport.update({
             where: { id: reportId },
-            data: { status: "FAILED", report_content: fullContent || "Generation failed" },
+            data: { status: "FAILED" as "FAILED", report_content: fullContent || "Generation failed" },
           });
 
           controller.enqueue(

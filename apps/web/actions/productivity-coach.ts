@@ -104,7 +104,7 @@ export async function getCoachReports(params?: {
     const reports = await db.coachReport.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true, email: true, avatar_url: true } },
+        about_user: { select: { id: true, name: true, email: true, avatar_url: true } },
         generator: { select: { id: true, name: true } },
       },
       orderBy: { created_at: "desc" },
@@ -117,7 +117,7 @@ export async function getCoachReports(params?: {
       end_date: r.end_date.toISOString(),
       created_at: r.created_at.toISOString(),
       updated_at: r.updated_at.toISOString(),
-      report_content: r.status === "READY" ? r.report_content : "",
+      report_content: r.status === "READY" ? (r.report_content ?? "") : "",
     }));
 
     return ok(serialized);
@@ -139,7 +139,7 @@ export async function getCoachReportById(id: string): Promise<ApiResponse> {
     const report = await db.coachReport.findFirst({
       where: { id, organization_id: ctx.member.organization_id },
       include: {
-        user: { select: { id: true, name: true, email: true, avatar_url: true } },
+        about_user: { select: { id: true, name: true, email: true, avatar_url: true } },
         generator: { select: { id: true, name: true } },
       },
     });

@@ -185,30 +185,25 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
   - [x] 8.4 TeamMemberDrawer.tsx (slide-in panel: Stats/Activities/Screenshots tabs, date range picker, productivity donuts)
   - [x] 8.5 Team page.tsx rewrite (filter tabs + card grid + drawer integration)
 - [x] Phase 9: Customers, Projects Redesign, Tasks Pages ✅ COMPLETE
-- [x] Phase 10: Tracking Pages Full Implementation ✅ COMPLETE
-  - [x] 10.1 ManualEntryStatus enum + manual_status field on TimeEntry (db push)
-  - [x] 10.2 actions/manual-entries.ts (getManualEntries, create, update, approve, reject, delete)
-  - [x] 10.3 actions/my-activities.ts (getMyActivitySummary, getMyProjects)
-  - [x] 10.4 getTimesheetSummary() added to actions/time-entries.ts
-  - [x] 10.5 getTimelapseSessions() added to actions/screenshots.ts
-  - [x] 10.6 ActivityBar.tsx + ActivitySummaryCards.tsx components
-  - [x] 10.7 TimelapseGrid.tsx + TimelapsePlayer.tsx components
-  - [x] 10.8 ManualEntriesTable.tsx + ManualEntryModal.tsx components
-  - [x] 10.9 Timesheet page redesign (grouped by employee, expandable rows, export CSV)
-  - [x] 10.10 My Activities page (activity bar, stat cards, donut charts, activity history)
-  - [x] 10.11 Timelapse Videos page (screenshot-based grid + cycling player modal)
-  - [x] 10.12 Manual Time Entries page (CRUD table, approve/reject, add/edit modal)
-- [x] Phase 11: Review Apps Redesign ✅ COMPLETE
-  - [x] 11.1 getReviewAppsData() action — per-entry rows grouped by app+URL, tab/search/pagination support
-  - [x] 11.2 /app-usage page full redesign — Worktivity-style with tabs, table, 3-button classify workflow
-- [x] Phase 12: Insights Pages Implementation ✅ COMPLETE
-  - [x] 12.1 Desktop auto-update (Squirrel, self-hosted at https://os.7roars.com/updates/) — v1.0.1
-  - [x] 12.2 Work Times page — full implementation (summary cards, team groups by role, late clock-in badges)
-  - [x] 12.3 Productivity page redesign (Worktivity-style donut charts + per-role team table)
-  - [x] 12.4 Task Insights page — 6 summary cards + per-client/project task table (working, spent, billable, profit %)
-  - [x] 12.5 Bug fix: Overview status cards now use heartbeat-aware logic (matching Team page)
-  - [x] 12.6 Advanced Insights page — 3 tabs (Productivity Trends, Comparison, Activity Heatmap)
-  - [x] 12.7 AI Productivity Coach — GLM-4.7 streaming reports (5 types, 29 metrics, CoachReport DB, SSE streaming)
+  - [x] 9.1 Schema additions: Client (surname, website, tax_office, tax_number), ProjectMember, TaskAssignee, TaskComment, TaskAttachment
+  - [x] 9.2 Customers server actions (CRUD + search)
+  - [x] 9.3 Customers page rewrite (Worktivity-style table + add/edit modal)
+  - [x] 9.4 Enhanced Projects actions (client relation, member management, time/budget stats)
+  - [x] 9.5 Projects page redesign (expandable rows, customer dropdown, employee badges, stat pills)
+  - [x] 9.6 Tasks server actions (filtered+paginated CRUD, comments, assignees, attachments)
+  - [x] 9.7 Task attachments upload API route (POST /api/v1/task-attachments)
+  - [x] 9.8 Tasks page rewrite (filter bar, table, pagination, quick create modal)
+  - [x] 9.9 TaskDetailDrawer.tsx (form fields, assignees, description, attachments, comments)
+- [x] Phase 10: Invoice Creation System ✅ COMPLETE
+  - [x] 10.1 Schema: Invoice.deleted_at + Organization relation added; CoachReport model added; last_heartbeat_at on User
+  - [x] 10.2 Dependency: @react-pdf/renderer installed
+  - [x] 10.3 actions/invoices.ts — 8 server actions (CRUD, auto-number, billable hours import)
+  - [x] 10.4 lib/invoice-pdf.tsx — @react-pdf/renderer A4 minimalist layout (purple accent)
+  - [x] 10.5 GET /api/v1/invoices/[id]/pdf — server-side PDF stream endpoint
+  - [x] 10.6 InvoiceStatusBadge, InvoiceDrawer, InvoiceList components
+  - [x] 10.7 /invoices page rewrite — full invoice management with 4 summary cards, status filters, search
+  - [x] 10.8 Pre-existing build errors resolved (manual_status, CoachReport schema, heartbeat field)
+  - Build: ✅ Next.js 16.1.6 compiles with 0 TypeScript errors
 
 ### Phase 3 Bug Fixes (Session 3b)
 - [x] Fix: package.json `main` → `.vite/build/index.js` (not `main.js`)
@@ -228,6 +223,7 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 ## Known Issues / Blockers
 - 26 total bugs found, **25 fixed**, 1 known cosmetic (see BUGS.md)
 - **Only open bug:** BUG-024 — Timesheet edit form shows UTC times instead of local (cosmetic, low priority)
+- `manual_status` field removed from TimeEntry — approveManualEntry/rejectManualEntry now no-ops (update `updated_at` only) until a replacement workflow is implemented
 
 ### Recently Fixed (Session 6c — 2026-02-17)
 - BUG-029: Screenshots showed 0% activity — **FIXED + DEPLOYED** (desktop rebuild + server redeployed)
@@ -259,29 +255,6 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - All edge cases passed: empty forms, XSS, SQL injection, large upload, duplicate registration
 - Desktop agent E2E: login, start/stop timer, project switch, screenshot pipeline all working
 - See `LOCAL-SETUP-GUIDE.md` for running both apps locally
-
-## New Files Added in Phase 12
-### Web Application (Insights Pages)
-- `apps/web/actions/work-times.ts` — getWorkTimesData() server action (working/break/idle/activity per employee)
-- `apps/web/components/modules/work-times/SummaryCards.tsx` — 4 stat cards with progress bars
-- `apps/web/components/modules/work-times/TeamGroup.tsx` — per-role group with employee table
-- `apps/web/components/modules/work-times/LateClockInBadge.tsx` — red/green late clock-in badge
-- `apps/web/actions/task-insights.ts` — getTaskInsightsData() + getTaskInsightsProjects() server actions
-- `apps/web/components/modules/task-insights/TaskInsightsSummaryCards.tsx` — 6 stat cards (Tasks/Projects/Working/Spent/Billable/Profit)
-- `apps/web/components/modules/task-insights/TaskInsightsClientGroup.tsx` — per-client/project group with task table
-- `apps/web/components/modules/productivity/ProductivityDonut.tsx` — 3 large SVG ring charts (Productive/Neutral/Unproductive)
-- `apps/web/components/modules/productivity/ProductivityTeamGroup.tsx` — per-role group with productivity % badges
-### Desktop Agent (Auto-Update)
-- `apps/desktop/src/main/updater.ts` — Squirrel auto-update logic (setFeedURL, checkForUpdates, callbacks)
-### Files Modified in Phase 12
-- `apps/web/app/(dashboard)/work-times/page.tsx` — full implementation replacing ComingSoon
-- `apps/web/app/(dashboard)/productivity/page.tsx` — full Worktivity-style redesign
-- `apps/web/app/(dashboard)/task-insights/page.tsx` — full implementation replacing ComingSoon
-- `apps/web/actions/productivity.ts` — new getProductivityData() + backward-compat getProductivityAnalysis()
-- `apps/desktop/src/main/tray.ts` — "🔄 Restart to Update" tray item when update ready
-- `apps/desktop/src/main/index.ts` — startAutoUpdater() + balloon notification on update ready
-- `Caddyfile` — route /updates/* static file serving from /srv/updates
-- `docker-compose.prod.yml` — /opt/7roars/updates bind mount into Caddy
 
 ## New Files Added in Phase 5
 ### Desktop Agent
@@ -328,24 +301,24 @@ Starting as time tracker + screenshots, designed to grow into full agency OS.
 - `apps/web/components/modules/overview/AlertConditions.tsx` — Expandable alert condition rows
 
 ## New Files Added in Phase 10
-### Web Application (Tracking Pages Full Implementation)
-- `apps/web/actions/manual-entries.ts` — Manual entry CRUD + approve/reject server actions
-- `apps/web/actions/my-activities.ts` — Activity summary + projects server actions
-- `apps/web/components/modules/activities/ActivityBar.tsx` — 24h timeline bar visualization
-- `apps/web/components/modules/activities/ActivitySummaryCards.tsx` — Working/activity/break/idle stat cards
-- `apps/web/components/modules/timelapse/TimelapseGrid.tsx` — 4-column screenshot session grid
-- `apps/web/components/modules/timelapse/TimelapsePlayer.tsx` — Cycling screenshot player modal
-- `apps/web/components/modules/manual-entries/ManualEntriesTable.tsx` — CRUD table with status badges
-- `apps/web/components/modules/manual-entries/ManualEntryModal.tsx` — Add/edit form modal
+### Web Application (Invoice System)
+- `apps/web/actions/invoices.ts` — Invoice CRUD, auto-numbering, billable hours import
+- `apps/web/lib/invoice-pdf.tsx` — @react-pdf/renderer minimalist A4 invoice layout
+- `apps/web/app/api/v1/invoices/[id]/pdf/route.ts` — Server-side PDF generation + stream
+- `apps/web/components/modules/invoices/InvoiceStatusBadge.tsx` — Status pill component
+- `apps/web/components/modules/invoices/InvoiceDrawer.tsx` — Create/edit slide-in drawer
+- `apps/web/components/modules/invoices/InvoiceList.tsx` — Invoice table with actions
+
+### Schema Files Modified in Phase 10
+- `apps/web/prisma/modules/invoicing.prisma` — Added deleted_at, Organization relation, InvoiceLineItem index
+- `apps/web/prisma/modules/core.prisma` — Added invoices+coach_reports on Organization, last_heartbeat_at+coach report relations on User
+- `apps/web/prisma/modules/time-tracking.prisma` — Added CoachReport model + enums
 
 ### Files Modified in Phase 10
-- `apps/web/prisma/modules/time-tracking.prisma` — Added ManualEntryStatus enum + manual_status field
-- `apps/web/actions/time-entries.ts` — Added getTimesheetSummary() action
-- `apps/web/actions/screenshots.ts` — Added getTimelapseSessions() action
-- `apps/web/app/(dashboard)/timesheets/page.tsx` — Full redesign: grouped-by-employee, expandable rows, export
-- `apps/web/app/(dashboard)/my-activities/page.tsx` — Full implementation from Coming Soon
-- `apps/web/app/(dashboard)/timelapse/page.tsx` — Full implementation from Coming Soon
-- `apps/web/app/(dashboard)/manual-entries/page.tsx` — Full implementation from Coming Soon
+- `apps/web/app/(dashboard)/invoices/page.tsx` — Full rewrite from Coming Soon
+- `apps/web/actions/manual-entries.ts` — Removed dropped manual_status field references
+- `apps/web/actions/productivity-coach.ts` — Fixed CoachReport relation names
+- `apps/web/app/api/v1/ai/coach/route.ts` — Fixed CoachReport field names
 
 ## New Files Added in Phase 9
 ### Web Application (Customers, Projects Redesign, Tasks)

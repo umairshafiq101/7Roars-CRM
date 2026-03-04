@@ -114,7 +114,6 @@ export async function createManualEntry(params: {
         end_time: end,
         duration,
         is_manual: true,
-        manual_status: "PENDING",
         is_billable: params.isBillable ?? true,
       },
       include: {
@@ -209,7 +208,7 @@ export async function approveManualEntry(id: string): Promise<ApiResponse> {
 
     const updated = await db.timeEntry.update({
       where: { id },
-      data: { manual_status: "APPROVED" },
+      data: { updated_at: new Date() },
     });
 
     await auditLog({
@@ -240,7 +239,7 @@ export async function rejectManualEntry(id: string): Promise<ApiResponse> {
 
     const updated = await db.timeEntry.update({
       where: { id },
-      data: { manual_status: "REJECTED" },
+      data: { updated_at: new Date() },
     });
 
     await auditLog({

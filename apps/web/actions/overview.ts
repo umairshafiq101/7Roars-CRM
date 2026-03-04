@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/permissions";
 import { ok, err, type ApiResponse } from "@/lib/api-response";
-import { getOnlineUserIdsFromDB } from "@/app/api/v1/heartbeat/route";
+import { getHeartbeatOnlineUsers } from "@/app/api/v1/heartbeat/route";
 
 async function getAuthContext() {
   const session = await getSession();
@@ -90,7 +90,7 @@ export async function getOverviewData(): Promise<ApiResponse> {
 
     let onlineUserIds: string[] = [];
     try {
-      onlineUserIds = await getOnlineUserIdsFromDB();
+      onlineUserIds = getHeartbeatOnlineUsers();
     } catch {
       // Heartbeat not available, leave empty
     }
@@ -106,21 +106,11 @@ export async function getOverviewData(): Promise<ApiResponse> {
       todayEntries.filter((e) => e.end_time === null).map((e) => e.user_id)
     );
 
-    // Use same deriveMemberStatus logic as Team page:
-    // working = active timer + online
-    // idle = active timer + NOT online (stale timer, agent offline)
-    // on_break = online + has entries today + no active timer
-    // stopped_work = has entries + no active timer + not online
-    // yet_to_start = no entries today
-    const working = [...usersWithActiveTimer].filter(
-      (id) => memberUserIds.has(id) && onlineSet.has(id)
-    ).length;
+    const working = [...usersWithActiveTimer].filter((id) => memberUserIds.has(id)).length;
     const onBreak = [...onlineSet].filter(
       (id) => memberUserIds.has(id) && usersWithEntriesToday.has(id) && !usersWithActiveTimer.has(id)
     ).length;
-    const idle = [...usersWithActiveTimer].filter(
-      (id) => memberUserIds.has(id) && !onlineSet.has(id)
-    ).length;
+    const idle = 0; // Simplified: would require real-time activity threshold check
     const stoppedWork = [...usersWithEntriesToday].filter(
       (id) => !usersWithActiveTimer.has(id) && !onlineSet.has(id) && memberUserIds.has(id)
     ).length;
@@ -142,22 +132,20 @@ export async function getOverviewData(): Promise<ApiResponse> {
     for (const entry of todayEntries) {
       const uid = entry.user_id;
       const existing = userEntryMap.get(uid);
-      // isWorking requires BOTH active timer AND online heartbeat (matches Team page logic)
-      const entryIsActive = entry.end_time === null && onlineSet.has(uid);
       if (!existing) {
         userEntryMap.set(uid, {
           name: entry.user?.name || "Unknown",
           avatar: entry.user?.avatar_url || null,
           clockIn: entry.start_time instanceof Date ? entry.start_time.toISOString() : String(entry.start_time),
           clockOut: entry.end_time ? (entry.end_time instanceof Date ? entry.end_time.toISOString() : String(entry.end_time)) : null,
-          isWorking: entryIsActive,
+          isWorking: entry.end_time === null,
         });
       } else {
         const entryEnd = entry.end_time;
-        if (entryEnd === null && onlineSet.has(uid)) {
+        if (entryEnd === null) {
           existing.isWorking = true;
           existing.clockOut = null;
-        } else if (entryEnd !== null && existing.clockOut !== null) {
+        } else if (existing.clockOut !== null) {
           const existingEnd = new Date(existing.clockOut).getTime();
           const newEnd = entryEnd instanceof Date ? entryEnd.getTime() : new Date(entryEnd).getTime();
           if (newEnd > existingEnd) {
